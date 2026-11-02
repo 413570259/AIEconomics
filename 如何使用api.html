@@ -8,6 +8,7 @@
         :root {
             --primary: #0f172a;
             --accent: #ff4b4b;
+            --btn-github: #24292e;
             --bg: #f8fafc;
             --card-bg: #ffffff;
             --text: #334155;
@@ -26,7 +27,7 @@
         header {
             background-color: var(--primary);
             color: white;
-            padding: 2rem 1.5rem;
+            padding: 2.5rem 1.5rem;
             text-align: center;
         }
 
@@ -36,9 +37,26 @@
         }
 
         header p {
-            margin: 0;
+            margin: 0 0 1.5rem 0;
             opacity: 0.8;
             font-size: 0.95rem;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            background-color: var(--btn-github);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s ease;
+        }
+
+        .cta-btn:hover {
+            background-color: #000000;
         }
 
         .container {
@@ -96,12 +114,6 @@
             font-size: 0.85rem;
         }
 
-        pre code {
-            background: transparent;
-            color: inherit;
-            padding: 0;
-        }
-
         .prompt-box {
             background-color: #f0fdf4;
             border-left: 4px solid #22c55e;
@@ -122,7 +134,6 @@
             font-size: 0.75rem;
             padding: 0.1rem 0.4rem;
             border-radius: 3px;
-            vertical-align: middle;
         }
     </style>
 </head>
@@ -131,6 +142,10 @@
 <header>
     <h1>🌐 打造你的第一個全球總體經濟儀表板</h1>
     <p>《AI 與經濟研究報告》工作坊講義 ｜ Streamlit + API 零環境快速上手指南</p>
+    <!-- 主要對外按鈕：直接帶學生進入 GitHub 頁面 -->
+    <a href="https://github.com/brianchih/AIEconomics" target="_blank" class="cta-btn">
+        🔗 前往老師的 GitHub 專案 (Fork 副本)
+    </a>
 </header>
 
 <div class="container">
@@ -152,15 +167,15 @@
         
         <h3>步驟 1：Fork 課程範本儲存庫</h3>
         <ol>
-            <li>前往課程提供的 GitHub 專案頁面。</li>
-            <li>點擊右上角的 <span class="badge">Fork</span> 按鈕，將專案複製到自己的 GitHub 帳號底下。</li>
+            <li>點擊上方或這裡的 <a href="https://github.com/brianchih/AIEconomics" target="_blank"><b>[老師的 GitHub 專案連結]</b></a>。</li>
+            <li>在專案頁面右上角找到 <span class="badge">Fork</span> 按鈕並點擊，將專案複製到自己的 GitHub 帳號底下。</li>
         </ol>
 
         <h3>步驟 2：一鍵部署至 Streamlit Cloud</h3>
         <ol>
             <li>登入 <a href="https://share.streamlit.io/" target="_blank">Streamlit Community Cloud</a>（使用 GitHub 帳號連動）。</li>
             <li>點擊 <b>Create app</b> ➔ 選擇 <b>Yep, I have an app already</b>。</li>
-            <li>選取你剛才 Fork 的 Repository，確認 Main file path 為 <code>app.py</code>，最後點擊 <b>Deploy!</b>。</li>
+            <li>選取你剛才 Fork 的 <code>AIEconomics</code> 專案，確認 Main file path 為 <code>app.py</code>，最後點擊 <b>Deploy!</b>。</li>
         </ol>
 
         <h3>步驟 3：設定安全的 API Key (Streamlit Secrets)</h3>
@@ -174,10 +189,10 @@
         </ol>
     </div>
 
-    <!-- 第三部分：提示詞庫 (Prompt Library) -->
+    <!-- 第三部分：提示詞庫 -->
     <div class="card">
         <h2>💡 儀表板延伸提示詞 (Prompt Library)</h2>
-        <p>學生可以使用 ChatGPT、Claude 或 Gemini 輔助修改 <code>app.py</code>，實現更多儀表板功能。以下提供可直接複製使用的 Prompt 範本：</p>
+        <p>學生可以使用 AI 工具（如 Gemini、ChatGPT）輔助修改 <code>app.py</code>，實現更多儀表板功能：</p>
 
         <div class="prompt-box">
             <div class="prompt-title">📌 提示詞 1：新增金融與總體指標</div>
@@ -192,11 +207,6 @@
         <div class="prompt-box">
             <div class="prompt-title">📌 提示詞 3：串接 Gemini API 自動生成經濟月報</div>
             <code>「我想在 Streamlit 儀表板下方加入一個按鈕『產生 AI 總體經濟摘要』。點擊後會將最新抓取到的 CPI、失業率與利率數值作為上下文，調用 google-genai 介面自動產出一份 200 字的總體經濟短評。請提供完整的範例程式碼。」</code>
-        </div>
-
-        <div class="prompt-box">
-            <div class="prompt-title">📌 提示詞 4：加入資料下載與區間篩選功能</div>
-            <code>「請幫我的 Streamlit 儀表板加入一個日期範圍選擇器 (st.date_input)，讓使用者能自行選擇圖表的時間區間（例如近 3 個月、近 1 年或全部歷史數據），並在圖表下方提供一個 CSV 下載按鈕 (st.download_button)。」</code>
         </div>
     </div>
 
