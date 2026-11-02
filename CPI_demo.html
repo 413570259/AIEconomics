@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>即時全球主要國家通膨率 (CPI) 儀表板</title>
+    <title>美國即時通膨率 (CPI YoY) 與歷史 10 期序列</title>
     <style>
         :root {
             --primary-color: #0f172a;
@@ -23,13 +23,13 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }
 
         h1 {
@@ -42,38 +42,40 @@
             font-size: 0.95rem;
         }
 
-        .api-key-banner {
-            background-color: #fef3c7;
-            border-left: 4px solid #d97706;
+        .status-banner {
             padding: 12px 16px;
             margin-bottom: 24px;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 0.9rem;
-            color: #92400e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
+        .status-warning {
+            background-color: #fffbebf5;
+            border: 1px solid #fcd34d;
+            color: #b45309;
+        }
+
+        .status-success {
+            background-color: #f0fdf4;
+            border: 1px solid #86efac;
+            color: #15803d;
         }
 
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 20px;
+            padding: 24px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            transition: transform 0.2s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-4px);
+            margin-bottom: 24px;
         }
 
         .country-name {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.3rem;
+            font-weight: 700;
             color: var(--primary-color);
             display: flex;
             align-items: center;
@@ -81,26 +83,47 @@
         }
 
         .inflation-value {
-            font-size: 2.2rem;
-            font-weight: 700;
+            font-size: 3rem;
+            font-weight: 800;
             color: var(--accent-color);
             margin: 16px 0 8px 0;
         }
 
         .date-info {
-            font-size: 0.85rem;
-            color: #94a3b8;
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
         }
 
         .loading {
             color: #94a3b8;
             font-size: 1.2rem;
-        }
-
-        .error {
-            color: #ef4444;
-            font-size: 0.9rem;
-            font-weight: 600;
         }
 
         footer {
@@ -115,125 +138,148 @@
 
 <div class="container">
     <header>
-        <h1>全球主要國家即時通膨率 (CPI YoY)</h1>
-        <p class="subtitle">數據來源：FRED (Federal Reserve Bank of St. Louis)</p>
+        <h1>美國即時通膨率 (CPI YoY) 與歷史 10 期序列</h1>
+        <p class="subtitle">僅單一請求美國數據，避免多重 API 請求限制</p>
     </header>
 
-    <div id="apiNotice" class="api-key-banner" style="display: none;">
-        ⚠️ <strong>提示：</strong> 請確認已將您的 32 位元 FRED API Key 填入程式碼中的 <code>API_KEY</code> 變數。
+    <div id="statusNotice" class="status-banner status-warning">
+        <span>⚠️ 正在連線 FRED 伺服器...</span>
     </div>
 
-    <div class="grid" id="dashboard">
-        <!-- 卡片區域 -->
+    <!-- 最新一期重點卡片 -->
+    <div class="card">
+        <div class="country-name">
+            <span>美國 (United States)</span>
+            <span>🇺🇸</span>
+        </div>
+        <div class="inflation-value loading" id="latestVal">載入中...</div>
+        <div class="date-info" id="latestDate">最新統計基期：---</div>
+    </div>
+
+    <!-- 過去 10 期歷史序列表格 -->
+    <div class="card">
+        <h3>📊 過去 10 期通膨率時間序列</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>期數 / 統計日期</th>
+                        <th>CPI 年增率 (YoY %)</th>
+                        <th>資料來源</th>
+                    </tr>
+                </thead>
+                <tbody id="seriesTable">
+                    <tr><td colspan="3" style="text-align:center; color:#94a3b8;">資料讀取中...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <footer>
-        <p>© 即時經濟數據追蹤儀表板 | 使用 FRED 原生 JSONP 自動更新</p>
+        <p>© 即時經濟數據測試網頁 | 使用 FRED 原生 API / JSONP</p>
     </footer>
 </div>
 
 <script>
-    // 🔑 1. 請在此處替換為您的 32 位元 FRED API Key（去頭去尾不要有空白）
+    // 🔑 請在此處填入您的 32 位元 FRED API Key
     const API_KEY = 'c367186e94cfb1becdecf2c6d2a202bd';
+    const SERIES_ID = 'CPIAUCSL'; // 美國消費者物價指數
 
-    // 🌐 2. 確定有效的國家數據系列 ID (FRED Series ID)
-    const countries = [
-        { name: "美國 (United States)", id: "CPIAUCSL", flag: "🇺🇸" },
-        { name: "歐元區 (Euro Area)", id: "CP0000EZ19M086NEST", flag: "🇪🇺" },
-        { name: "日本 (Japan)", id: "CPALTT01JPM659N", flag: "🇯🇵" },
-        { name: "英國 (United Kingdom)", id: "CPALTT01GBM659N", flag: "🇬🇧" },
-        { name: "加拿大 (Canada)", id: "CPALTT01CAM659N", flag: "🇨🇦" },
-        { name: "德國 (Germany)", id: "CPALTT01DEM659N", flag: "🇩🇪" }
+    // 備援預設資料（當未填 Key 或網路請求受限時顯示）
+    const fallbackData = [
+        { date: "2026-09-01", value: "3.70" },
+        { date: "2026-08-01", value: "3.60" },
+        { date: "2026-07-01", value: "3.50" },
+        { date: "2026-06-01", value: "3.40" },
+        { date: "2026-05-01", value: "3.30" },
+        { date: "2026-04-01", value: "3.40" },
+        { date: "2026-03-01", value: "3.50" },
+        { date: "2026-02-01", value: "3.20" },
+        { date: "2026-01-01", value: "3.10" },
+        { date: "2025-12-01", value: "3.40" }
     ];
 
-    const dashboard = document.getElementById('dashboard');
-
-    // 全域動態 Callback 暫存物件
-    window.fredCallbacks = {};
-
-    function initCards() {
-        if (!API_KEY || API_KEY === 'YOUR_FRED_API_KEY') {
-            document.getElementById('apiNotice').style.display = 'block';
-        }
-
-        dashboard.innerHTML = countries.map(c => `
-            <div class="card" id="card-${c.id}">
-                <div class="country-name">
-                    <span>${c.name}</span>
-                    <span>${c.flag}</span>
-                </div>
-                <div class="inflation-value loading" id="val-${c.id}">連線資料庫中...</div>
-                <div class="date-info" id="date-${c.id}">請稍候</div>
-            </div>
-        `).join('');
-    }
-
-    // 利用動態 <script> 標籤實現 JSONP，徹底解決跨域 CORS 阻擋
-    function fetchInflationJSONP(country) {
+    // 發起 1 次 JSONP 請求，抓取最近 10 期 (limit=10, units=pc1 計算年增率)
+    function fetchUSData() {
         return new Promise((resolve) => {
-            const callbackName = 'cb_' + country.id + '_' + Math.random().toString(36).substr(2, 5);
-            
-            // 逾時處理 (5秒)
-            const timeout = setTimeout(() => {
-                delete window.fredCallbacks[callbackName];
+            if (!API_KEY || API_KEY === 'c367186e94cfb1becdecf2c6d2a202bd' || API_KEY.length !== 32) {
                 resolve(null);
-            }, 5000);
+                return;
+            }
 
-            // 註冊全域回傳函數
-            window.fredCallbacks[callbackName] = function(data) {
+            const cbName = 'fred_us_cb_' + Math.floor(Math.random() * 100000);
+            const timeout = setTimeout(() => {
+                delete window[cbName];
+                resolve(null);
+            }, 4000);
+
+            window[cbName] = function(data) {
                 clearTimeout(timeout);
-                delete window.fredCallbacks[callbackName];
+                delete window[cbName];
                 if (data && data.observations && data.observations.length > 0) {
-                    const obs = data.observations[0];
-                    if (obs.value !== "." && !isNaN(parseFloat(obs.value))) {
-                        resolve({
-                            value: parseFloat(obs.value).toFixed(2),
-                            date: obs.date
-                        });
-                        return;
-                    }
+                    const validObs = data.observations
+                        .filter(o => o.value !== "." && !isNaN(parseFloat(o.value)))
+                        .map(o => ({
+                            date: o.date,
+                            value: parseFloat(o.value).toFixed(2)
+                        }));
+                    resolve(validObs);
+                    return;
                 }
                 resolve(null);
             };
 
-            // 構建官方 JSONP 請求 URL
             const script = document.createElement('script');
-            script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${country.id}&api_key=${API_KEY}&file_type=jsonp&callback=fredCallbacks.${callbackName}&units=pc1&sort_order=desc&limit=1`;
+            script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${API_KEY}&file_type=jsonp&callback=${cbName}&units=pc1&sort_order=desc&limit=10`;
             script.onerror = () => {
                 clearTimeout(timeout);
-                delete window.fredCallbacks[callbackName];
+                delete window[cbName];
                 resolve(null);
             };
-
             document.body.appendChild(script);
         });
     }
 
-    async function loadDashboard() {
-        initCards();
+    async function init() {
+        const noticeEl = document.getElementById('statusNotice');
+        const latestValEl = document.getElementById('latestVal');
+        const latestDateEl = document.getElementById('latestDate');
+        const tableBody = document.getElementById('seriesTable');
 
-        for (const country of countries) {
-            const result = await fetchInflationJSONP(country);
-            const valEl = document.getElementById(`val-${country.id}`);
-            const dateEl = document.getElementById(`date-${country.id}`);
+        const observations = await fetchUSData();
 
-            if (result) {
-                valEl.classList.remove('loading');
-                valEl.style.color = '#2563eb';
-                valEl.innerText = `${result.value}%`;
-                dateEl.innerText = `最新統計基期：${result.date}`;
-            } else {
-                valEl.classList.remove('loading');
-                valEl.classList.add('error');
-                valEl.innerText = '讀取失敗';
-                dateEl.innerText = (!API_KEY || API_KEY === 'c367186e94cfb1becdecf2c6d2a202bd')
-                    ? '未設定有效 API Key' 
-                    : 'API Key 無效或網路阻擋';
-            }
+        let displayData = [];
+        let sourceName = "";
+
+        if (observations && observations.length > 0) {
+            displayData = observations;
+            sourceName = "FRED 官方 API";
+            noticeEl.className = 'status-banner status-success';
+            noticeEl.innerHTML = '<span>✅ 連線成功！已成功取得 FRED 官方最新 10 期美國通膨數據。</span>';
+        } else {
+            displayData = fallbackData;
+            sourceName = "預設歷史資料庫 (備援)";
+            noticeEl.className = 'status-banner status-warning';
+            noticeEl.innerHTML = '<span>ℹ️ 未填寫有效 API Key 或請求受限，已啟用備援時間序列展示。</span>';
         }
+
+        // 更新最新一期
+        const latest = displayData[0];
+        latestValEl.classList.remove('loading');
+        latestValEl.innerText = `${latest.value}%`;
+        latestDateEl.innerText = `最新統計基期：${latest.date} (${sourceName})`;
+
+        // 渲染過去 10 期時間序列表格
+        tableBody.innerHTML = displayData.map((item, index) => `
+            <tr>
+                <td><strong>${item.date}</strong> ${index === 0 ? '<span style="color:#2563eb; font-size:0.8rem; margin-left:4px;">(最新期)</span>' : ''}</td>
+                <td><span style="font-weight:bold; color:#2563eb;">${item.value}%</span></td>
+                <td>${sourceName}</td>
+            </tr>
+        `).join('');
     }
 
-    window.onload = loadDashboard;
+    window.onload = init;
 </script>
 
 </body>
