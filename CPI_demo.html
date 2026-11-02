@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美國即時通膨率 (CPI YoY) - API 診斷頁面</title>
+    <title>美國即時通膨率 (CPI YoY) - GitHub Pages 專用版</title>
     <style>
         :root {
             --primary-color: #0f172a;
@@ -45,7 +45,7 @@
             margin-bottom: 24px;
             font-family: monospace;
             font-size: 0.9rem;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .card {
@@ -118,12 +118,12 @@
 
 <div class="container">
     <header>
-        <h1>美國 CPI 即時連線診斷儀表板</h1>
+        <h1>美國 CPI 即時連線儀表板</h1>
     </header>
 
-    <!-- 除錯視窗 -->
+    <!-- 除錯記錄視窗 -->
     <div class="debug-card" id="debugLog">
-        🔍 系統自我檢測中...<br>
+        🔍 GitHub Pages 環境即時檢測中...<br>
     </div>
 
     <!-- 最新一期重點卡片 -->
@@ -157,8 +157,8 @@
 </div>
 
 <script>
-    // 🔑 1. 請在此處填入您向 FRED 申請到的 32 字元 API Key
-    const API_KEY = '2ed09da231f98ab0d3eddfdcecd02875'; 
+    // 🔑 請在此處確認填入您的 32 位元 FRED API Key
+    const API_KEY = 'c367186e94cfb1becdecf2c6d2a202bd'; 
 
     const SERIES_ID = 'CPIAUCSL';
     const debugLog = document.getElementById('debugLog');
@@ -167,71 +167,59 @@
         debugLog.innerHTML += msg + '<br>';
     }
 
-    function fetchUSData() {
-        return new Promise((resolve) => {
-            // 清理前後空白
-            const cleanKey = API_KEY.trim();
+    async function fetchUSData() {
+        const cleanKey = API_KEY.trim();
+        log(`🔑 API Key 字元數檢查：<strong>${cleanKey.length}</strong> 字元`);
+        
+        if (!cleanKey || cleanKey === 'YOUR_FRED_API_KEY' || cleanKey.length !== 32) {
+            log('❌ <span class="badge-danger">設定錯誤</span>：請確認已在代碼中填入長度正確的 32 位元 API Key。');
+            return null;
+        }
 
-            log(`🔑 API Key 字元數長度檢查：<strong>${cleanKey.length}</strong> 字元`);
-            
-            if (!cleanKey || cleanKey === 'YOUR_API_KEY') {
-                log('❌ <span class="badge-danger">失敗原因</span>：您尚未更換 API_KEY 變數（仍為預設字串）。');
-                resolve(null);
-                return;
-            }
+        const rawUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${cleanKey}&file_type=json&units=pc1&sort_order=desc&limit=10`;
+        
+        // 多重雙向通道（備用 Proxy 輪詢機制）
+        const proxies = [
+            `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`
+        ];
 
-            if (cleanKey.length !== 32) {
-                log(`❌ <span class="badge-danger">失敗原因</span>：Key 長度不正確（應為 32 字元，目前為 ${cleanKey.length} 字元）。請檢查是否複製到名稱或包含了前後多餘字元。`);
-                resolve(null);
-                return;
-            }
+        for (let i = 0; i < proxies.length; i++) {
+            const proxyUrl = proxies[i];
+            log(`🌐 嘗試透過 HTTP 通道 ${i + 1} 抓取 FRED 資料...`);
 
-            const cbName = 'fred_cb_' + Math.floor(Math.random() * 100000);
-            log(`🌐 正在向 FRED 發起 JSONP 請求 (Callback: ${cbName})...`);
+            try {
+                const res = await fetch(proxyUrl);
+                if (!res.ok) continue;
 
-            const timeout = setTimeout(() => {
-                delete window[cbName];
-                log('⏱️ <span class="badge-danger">連線逾時</span>：FRED 伺服器未於 5 秒內回應，可能是網路封鎖或 file:// 限制。');
-                resolve(null);
-            }, 5000);
-
-            window[cbName] = function(data) {
-                clearTimeout(timeout);
-                delete window[cbName];
-
-                if (data.error_code) {
-                    log(`❌ <span class="badge-danger">FRED API 拒絕存取</span> (${data.error_code}): ${data.error_message}`);
-                    resolve(null);
-                    return;
+                let jsonRes = await res.json();
+                
+                // 相容 allorigins 的 contents 包裹結構
+                if (jsonRes.contents) {
+                    jsonRes = JSON.parse(jsonRes.contents);
                 }
 
-                if (data && data.observations && data.observations.length > 0) {
-                    log('✅ <span class="badge-success">連線成功</span>：已成功從 FRED 撈取資料！');
-                    const validObs = data.observations
+                if (jsonRes.error_code) {
+                    log(`❌ <span class="badge-danger">FRED API 錯誤 (${jsonRes.error_code})</span>：${jsonRes.error_message}`);
+                    return null;
+                }
+
+                if (jsonRes && jsonRes.observations && jsonRes.observations.length > 0) {
+                    log('✅ <span class="badge-success">連線成功！</span>已從 FRED 官方成功取得數據。');
+                    return jsonRes.observations
                         .filter(o => o.value !== "." && !isNaN(parseFloat(o.value)))
                         .map(o => ({
                             date: o.date,
                             value: parseFloat(o.value).toFixed(2)
                         }));
-                    resolve(validObs);
-                    return;
                 }
-                log('⚠️ FRED 回傳空資料。');
-                resolve(null);
-            };
+            } catch (err) {
+                log(`⚠️ 通道 ${i + 1} 嘗試失敗，自動切換至下一個通道...`);
+            }
+        }
 
-            const script = document.createElement('script');
-            script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${cleanKey}&file_type=jsonp&callback=${cbName}&units=pc1&sort_order=desc&limit=10`;
-            
-            script.onerror = () => {
-                clearTimeout(timeout);
-                delete window[cbName];
-                log('❌ <span class="badge-danger">Script 載入失敗</span>：瀏覽器阻擋了跨域腳本加載 (CORS / AdBlock / File Protocol 限制)。');
-                resolve(null);
-            };
-
-            document.body.appendChild(script);
-        });
+        log('❌ <span class="badge-danger">連線失敗</span>：無法透過代理通道連線至 FRED API。');
+        return null;
     }
 
     async function init() {
@@ -245,7 +233,7 @@
             const latest = observations[0];
             latestValEl.classList.remove('loading');
             latestValEl.innerText = `${latest.value}%`;
-            latestDateEl.innerText = `最新統計基期：${latest.date} (FRED API)`;
+            latestDateEl.innerText = `最新統計基期：${latest.date} (FRED 官方 API)`;
 
             tableBody.innerHTML = observations.map((item, index) => `
                 <tr>
@@ -259,7 +247,7 @@
             latestValEl.style.color = '#ef4444';
             latestValEl.innerText = '讀取失敗';
             latestDateEl.innerText = '請查看上方黑色區塊的診斷訊息';
-            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444;">連線失敗，請依診斷訊息修復</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444;">連線失敗，請參考診斷日誌排查</td></tr>`;
         }
     }
 
