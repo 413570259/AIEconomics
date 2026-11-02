@@ -99,7 +99,7 @@
 
         .error {
             color: #ef4444;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
         }
 
@@ -120,23 +120,23 @@
     </header>
 
     <div id="apiNotice" class="api-key-banner" style="display: none;">
-        ⚠️ <strong>提示：</strong> 您目前使用的是範例 API Key，若讀取受限，請先前往 <a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank">FRED 官網免費申請自己的 API Key</a> 並填入程式碼中。
+        ⚠️ <strong>提示：</strong> 請確認已將您的 32 位元 FRED API Key 填入程式碼中的 <code>API_KEY</code> 變數。
     </div>
 
     <div class="grid" id="dashboard">
-        <!-- 數據卡片將由 JavaScript 動態生成 -->
+        <!-- 卡片區域 -->
     </div>
 
     <footer>
-        <p>© 即時經濟數據追蹤儀表板 | 使用 FRED API 自動更新</p>
+        <p>© 即時經濟數據追蹤儀表板 | 使用 FRED 原生 JSONP 自動更新</p>
     </footer>
 </div>
 
 <script>
-    // 🔑 請在單引號中填入您申請到的 32 位元 FRED API Key
-    const API_KEY = 'c367186e94cfb1becdecf2c6d2a202bd';
+    // 🔑 1. 請在此處替換為您的 32 位元 FRED API Key（去頭去尾不要有空白）
+    const API_KEY = 'YOUR_FRED_API_KEY';
 
-    // 🌐 校正後的全球主要國家 CPI 系列 ID (最新有效 Series IDs)
+    // 🌐 2. 確定有效的國家數據系列 ID (FRED Series ID)
     const countries = [
         { name: "美國 (United States)", id: "CPIAUCSL", flag: "🇺🇸" },
         { name: "歐元區 (Euro Area)", id: "CP0000EZ19M086NEST", flag: "🇪🇺" },
@@ -148,9 +148,11 @@
 
     const dashboard = document.getElementById('dashboard');
 
-    // 初始化卡片外觀
+    // 全域動態 Callback 暫存物件
+    window.fredCallbacks = {};
+
     function initCards() {
-        if (API_KEY === 'YOUR_FRED_API_KEY') {
+        if (!API_KEY || API_KEY === 'YOUR_FRED_API_KEY') {
             document.getElementById('apiNotice').style.display = 'block';
         }
 
@@ -160,50 +162,58 @@
                     <span>${c.name}</span>
                     <span>${c.flag}</span>
                 </div>
-                <div class="inflation-value loading" id="val-${c.id}">資料讀取中...</div>
-                <div class="date-info" id="date-${c.id}">正在連接 FRED 資料庫</div>
+                <div class="inflation-value loading" id="val-${c.id}">連線資料庫中...</div>
+                <div class="date-info" id="date-${c.id}">請稍候</div>
             </div>
         `).join('');
     }
 
-    // 呼叫 API 抓取通膨資料
-    async function fetchInflationData(seriesId) {
-        const targetUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEY}&file_type=json&units=pc1&sort_order=desc&limit=1`;
-        
-        // 使用多重跨域 Proxy 機制，確保連線成功率
-        const proxyUrls = [
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
-        ];
+    // 利用動態 <script> 標籤實現 JSONP，徹底解決跨域 CORS 阻擋
+    function fetchInflationJSONP(country) {
+        return new Promise((resolve) => {
+            const callbackName = 'cb_' + country.id + '_' + Math.random().toString(36).substr(2, 5);
+            
+            // 逾時處理 (5秒)
+            const timeout = setTimeout(() => {
+                delete window.fredCallbacks[callbackName];
+                resolve(null);
+            }, 5000);
 
-        for (const proxyUrl of proxyUrls) {
-            try {
-                const response = await fetch(proxyUrl);
-                if (!response.ok) continue;
-                
-                const data = await response.json();
+            // 註冊全域回傳函數
+            window.fredCallbacks[callbackName] = function(data) {
+                clearTimeout(timeout);
+                delete window.fredCallbacks[callbackName];
                 if (data && data.observations && data.observations.length > 0) {
-                    const latestObs = data.observations[0];
-                    if (latestObs.value !== "." && !isNaN(parseFloat(latestObs.value))) {
-                        return {
-                            value: parseFloat(latestObs.value).toFixed(2),
-                            date: latestObs.date
-                        };
+                    const obs = data.observations[0];
+                    if (obs.value !== "." && !isNaN(parseFloat(obs.value))) {
+                        resolve({
+                            value: parseFloat(obs.value).toFixed(2),
+                            date: obs.date
+                        });
+                        return;
                     }
                 }
-            } catch (error) {
-                console.warn(`代理連線重試中 (${seriesId})...`, error);
-            }
-        }
-        return null;
+                resolve(null);
+            };
+
+            // 構建官方 JSONP 請求 URL
+            const script = document.createElement('script');
+            script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${country.id}&api_key=${API_KEY}&file_type=jsonp&callback=fredCallbacks.${callbackName}&units=pc1&sort_order=desc&limit=1`;
+            script.onerror = () => {
+                clearTimeout(timeout);
+                delete window.fredCallbacks[callbackName];
+                resolve(null);
+            };
+
+            document.body.appendChild(script);
+        });
     }
 
-    // 載入所有國家數據並更新畫面
     async function loadDashboard() {
         initCards();
 
         for (const country of countries) {
-            const result = await fetchInflationData(country.id);
+            const result = await fetchInflationJSONP(country);
             const valEl = document.getElementById(`val-${country.id}`);
             const dateEl = document.getElementById(`date-${country.id}`);
 
@@ -211,14 +221,14 @@
                 valEl.classList.remove('loading');
                 valEl.style.color = '#2563eb';
                 valEl.innerText = `${result.value}%`;
-                dateEl.innerText = `統計基期：${result.date}`;
+                dateEl.innerText = `最新統計基期：${result.date}`;
             } else {
                 valEl.classList.remove('loading');
                 valEl.classList.add('error');
                 valEl.innerText = '讀取失敗';
-                dateEl.innerText = API_KEY === 'YOUR_FRED_API_KEY' 
-                    ? '請填入有效的 FRED API Key' 
-                    : '請檢查網路連線或金鑰權限';
+                dateEl.innerText = (!API_KEY || API_KEY === 'c367186e94cfb1becdecf2c6d2a202bd')
+                    ? '未設定有效 API Key' 
+                    : 'API Key 無效或網路阻擋';
             }
         }
     }
