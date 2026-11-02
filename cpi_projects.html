@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI與經濟分析 - 各組CPI專案成果與有效連結彙整</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-accent: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+            --border: #e2e8f0;
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 24px;
+            line-height: 1.6;
+        }
+
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 32px auto;
+            text-align: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #ffffff;
+            padding: 36px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0 0 12px 0;
+            font-size: 2.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.85;
+            font-size: 1.05rem;
+        }
+
+        .search-box {
+            max-width: 1200px;
+            margin: 0 auto 24px auto;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--hover-shadow);
+            border-color: #cbd5e1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .group-badge {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0 0 16px 0;
+        }
+
+        .link-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .link-item:hover {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+        }
+
+        .no-link {
+            padding: 10px 14px;
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            max-width: 1200px;
+            margin: 40px auto 0 auto;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>AI與經濟分析 - 各組CPI專案成果與有效連結</h1>
+    <p>提供全班 19 組最新提交之專案簡報、成果網頁與對話紀錄有效瀏覽連結</p>
+</div>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="🔍 輸入組別 (例: 01, 10, 19) 或關鍵字篩選..." onkeyup="filterCards()">
+</div>
+
+<div class="grid" id="cardGrid">
+
+    <div class="card" data-group="第 01 組" data-title="CPI 視角與分析透視">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 01 組</span>
+            </div>
+            <div class="card-title">CPI 視角與分析透視</div>
+        </div>
+        <div class="link-list">
+    <a href="https://yan-0202.github.io/cpi-lens/" target="_blank" class="link-item"><span>🔗 網頁展演 (GitHub Pages)</span> <span>→</span></a><a href="https://docs.google.com/presentation/d/1WgRwP5lgVOtKUkA1zoG_5-vza5HHiDhu/edit?usp=drive_link&ouid=104927215842517258594&rtpof=true&sd=true" target="_blank" class="link-item"><span>🔗 簡報簡報 (Google Slides)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 02 組" data-title="CPI 通膨預測與分析報告">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 02 組</span>
+            </div>
+            <div class="card-title">CPI 通膨預測與分析報告</div>
+        </div>
+        <div class="link-list">
+    <a href="https://drive.google.com/file/d/1S4Qc2bEjv3XfTbI830gNoPQw4zz8NAA3/view?usp=drivesdk" target="_blank" class="link-item"><span>🔗 簡報文件 (Google Drive)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 03 組" data-title="美國 CPI 通膨分析簡報">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 03 組</span>
+            </div>
+            <div class="card-title">美國 CPI 通膨分析簡報</div>
+        </div>
+        <div class="link-list">
+    <a href="https://docs.google.com/presentation/d/1MuypdVi_xqEfehAt_y5IUwGv_osSjdY0/edit?usp=drivesdk&ouid=109253225447288809435&rtpof=true&sd=true" target="_blank" class="link-item"><span>🔗 簡報簡報 (Google Slides)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 04 組" data-title="Gemini CPI 分析對話與成果">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 04 組</span>
+            </div>
+            <div class="card-title">Gemini CPI 分析對話與成果</div>
+        </div>
+        <div class="link-list">
+    <a href="https://share.gemini.google/OcGwTL4MM3gq" target="_blank" class="link-item"><span>🔗 對話分享 1 (Gemini Share)</span> <span>→</span></a><a href="https://share.gemini.google/iWt9vGhaOFYW" target="_blank" class="link-item"><span>🔗 對話分享 2 (Gemini Share)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 05 組" data-title="CPI 預測模型與成果報告">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 05 組</span>
+            </div>
+            <div class="card-title">CPI 預測模型與成果報告</div>
+        </div>
+        <div class="link-list">
+    <a href="https://drive.google.com/file/d/1w2eApjaLmqM2J9jfPbXYMosmZe2lZ6jG/view?usp=drivesdk" target="_blank" class="link-item"><span>🔗 簡報檔案 (Google Drive)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 06 組" data-title="通膨分析與預測簡報">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 06 組</span>
+            </div>
+            <div class="card-title">通膨分析與預測簡報</div>
+        </div>
+        <div class="link-list">
+    <a href="https://share.gemini.google/OqVIVQvZiZvD" target="_blank" class="link-item"><span>🔗 對話記錄 (Gemini Share)</span> <span>→</span></a><a href="https://1drv.ms/p/c/b8a972a3d0f23092/IQCRzk-rUxQiQpR4AGxRWZCiAfi4_715mGhvo7HPMEhcYBg?e=7RO3eY" target="_blank" class="link-item"><span>🔗 線上簡報 (OneDrive / PowerPoint)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 07 組" data-title="美國 CPI 分析報告">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 07 組</span>
+            </div>
+            <div class="card-title">美國 CPI 分析報告</div>
+        </div>
+        <div class="link-list">
+    <a href="https://drive.google.com/file/d/1gBRXIyi8gYET7TxRK-5evJqsEa88mahc/view?usp=drivesdk" target="_blank" class="link-item"><span>🔗 簡報文件 (Google Drive)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 08 組" data-title="通膨數據分析專案">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 08 組</span>
+            </div>
+            <div class="card-title">通膨數據分析專案</div>
+        </div>
+        <div class="link-list">
+    <a href="https://drive.google.com/file/d/1sdvUBmvEaZ68DGNMb3pdhkKxd9TdaJ-V/view?usp=drive_link" target="_blank" class="link-item"><span>🔗 簡報文件 (Google Drive)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 09 組" data-title="CPI 分析與簡報視覺化">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 09 組</span>
+            </div>
+            <div class="card-title">CPI 分析與簡報視覺化</div>
+        </div>
+        <div class="link-list">
+    <a href="https://share.gemini.google/9lSNegtUOcTN" target="_blank" class="link-item"><span>🔗 對話記錄 (Gemini Share)</span> <span>→</span></a><a href="https://canva.link/qgs00pqez8in2nd" target="_blank" class="link-item"><span>🔗 視覺簡報 (Canva Design)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 10 組" data-title="美國 CPI 預測投影片簡報">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 10 組</span>
+            </div>
+            <div class="card-title">美國 CPI 預測投影片簡報</div>
+        </div>
+        <div class="link-list">
+    <a href="https://www.image2url.com/r2/default/presentations/1793255872932-e5c96755-6004-4bef-a491-0606ac3cf172.pptx" target="_blank" class="link-item"><span>🔗 簡報下載 (PPTX)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 11 組" data-title="通膨與 CPI 數據預測簡報">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 11 組</span>
+            </div>
+            <div class="card-title">通膨與 CPI 數據預測簡報</div>
+        </div>
+        <div class="link-list">
+    <a href="https://docs.google.com/presentation/d/1KVYj3ps82hTy54RB9WrgB1n97CCaMsAN/edit?usp=drivesdk&ouid=107277439525674608165&rtpof=true&sd=true" target="_blank" class="link-item"><span>🔗 線上簡報 (Google Slides)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 12 組" data-title="CPI 分析研究簡報">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 12 組</span>
+            </div>
+            <div class="card-title">CPI 分析研究簡報</div>
+        </div>
+        <div class="link-list">
+    <a href="https://share.gemini.google/PJTyMKwuij79" target="_blank" class="link-item"><span>🔗 對話記錄 (Gemini Share)</span> <span>→</span></a><a href="https://docs.google.com/presentation/d/1KyPejlmoxxZ_Zn5L1ZLbSsLbpzl3K9BmnTlq3qj4RNg/edit?usp=drivesdk" target="_blank" class="link-item"><span>🔗 線上簡報 (Google Slides)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 13 組" data-title="通膨預測模型簡報展演">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 13 組</span>
+            </div>
+            <div class="card-title">通膨預測模型簡報展演</div>
+        </div>
+        <div class="link-list">
+    <a href="https://share.gemini.google/FBHG0cfO18bq" target="_blank" class="link-item"><span>🔗 對話記錄 (Gemini Share)</span> <span>→</span></a><a href="https://1drv.ms/p/c/173db6cc641ab865/IQAZgi1YQ0mVR7So7KQe44GbASDC2WgsBY7OwnX4pzO1-L4" target="_blank" class="link-item"><span>🔗 簡報檔案 (OneDrive / PowerPoint)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 14 組" data-title="通膨分析視覺化設計">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 14 組</span>
+            </div>
+            <div class="card-title">通膨分析視覺化設計</div>
+        </div>
+        <div class="link-list">
+    <a href="https://canva.link/eq3n3tkplexh9na" target="_blank" class="link-item"><span>🔗 線上簡報 (Canva Design)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 15 組" data-title="CPI 預測與經濟分析簡報">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 15 組</span>
+            </div>
+            <div class="card-title">CPI 預測與經濟分析簡報</div>
+        </div>
+        <div class="link-list">
+    <a href="https://share.gemini.google/Gd5jSHFiQCh2" target="_blank" class="link-item"><span>🔗 對話記錄 (Gemini Share)</span> <span>→</span></a><a href="https://docs.google.com/presentation/d/1Q8-vrq3licll1ayRnR6CWQK69a1LhU26MHuCW6-vWYk/edit?usp=sharing" target="_blank" class="link-item"><span>🔗 線上簡報 (Google Slides)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 16 組" data-title="美國 CPI 預測終極分析網頁">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 16 組</span>
+            </div>
+            <div class="card-title">美國 CPI 預測終極分析網頁</div>
+        </div>
+        <div class="link-list">
+    <a href="https://gemini.google.com/app/3658b421c39123b6?canvas-id=c_3658b421c39123b6_us_cpi_forecast_final.html&full-screen=true&is_mobile_app=true&hl=zh-TW&pli=1" target="_blank" class="link-item"><span>🔗 互動分析網頁 (Gemini Canvas)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 17 組" data-title="成果檔案準備中">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 17 組</span>
+            </div>
+            <div class="card-title">成果檔案準備中</div>
+        </div>
+        <div class="link-list">
+    <div class="no-link">⚠️ 尚未提供或檔案更新中</div>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 18 組" data-title="美國 CPI 通膨預測 PDF 報告">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 18 組</span>
+            </div>
+            <div class="card-title">美國 CPI 通膨預測 PDF 報告</div>
+        </div>
+        <div class="link-list">
+    <a href="file:///C:/Users/%E7%AB%A0%E7%AD%B1%E8%91%B6/OneDrive/%E6%A1%8C%E9%9D%A2/%E7%BE%8E%E5%9C%8BCPI%E9%80%9A%E8%86%A8%E9%A0%90%E6%B8%AC.pdf" target="_blank" class="link-item"><span>🔗 本地預覽檔 (PDF)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+    <div class="card" data-group="第 19 組" data-title="CPI 專案報告與簡報彙整">
+        <div>
+            <div class="card-header">
+                <span class="group-badge">第 19 組</span>
+            </div>
+            <div class="card-title">CPI 專案報告與簡報彙整</div>
+        </div>
+        <div class="link-list">
+    <a href="https://docs.google.com/presentation/d/1kh8PEDB42rgjlKIMjvhCs-Ry38TXslqX/edit?usp=drivesdk&ouid=101017095116224046252&rtpof=true&sd=true" target="_blank" class="link-item"><span>🔗 主要簡報 (Google Slides)</span> <span>→</span></a><a href="https://ap.wps.com/cms/docs/d/cbCais4zkl1vPlsD?sa=601.1074&refer=copylink" target="_blank" class="link-item"><span>🔗 線上文件 (WPS Office)</span> <span>→</span></a><a href="https://docs.google.com/presentation/d/1mJDEYvL44dddQMqkb2RV-KBrwDgvL0AJ/edit?usp=drivesdk&ouid=110491601789034440887&rtpof=true&sd=true" target="_blank" class="link-item"><span>🔗 備用簡報 (Google Slides)</span> <span>→</span></a>
+        </div>
+    </div>
+    
+</div>
+
+<footer>
+    <p>© 2026 AI與經濟分析課程 | 學生成果展示與資源庫</p>
+</footer>
+
+<script>
+function filterCards() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.getElementsByClassName('card');
+    
+    for (let i = 0; i < cards.length; i++) {
+        const group = cards[i].getAttribute('data-group').toLowerCase();
+        const title = cards[i].getAttribute('data-title').toLowerCase();
+        const text = cards[i].innerText.toLowerCase();
+        
+        if (group.includes(input) || title.includes(input) || text.includes(input)) {
+            cards[i].style.display = "";
+        } else {
+            cards[i].style.display = "none";
+        }
+    }
+}
+</script>
+
+</body>
+</html>
