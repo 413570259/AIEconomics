@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streamlit 財經自動化儀表板 - 實作教學與 Prompt 指引</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #ff4b4b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.8rem;
+        }
+
+        header p {
+            margin: 0;
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            font-size: 1.3rem;
+        }
+
+        h3 {
+            color: #1e293b;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+        }
+
+        ol, ul {
+            padding-left: 1.2rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        code {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: "Fira Code", Monaco, Consolas, monospace;
+            font-size: 0.88rem;
+        }
+
+        pre {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        .prompt-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .prompt-title {
+            font-weight: bold;
+            color: #15803d;
+            margin-bottom: 0.3rem;
+        }
+
+        .badge {
+            background-color: var(--accent);
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌐 打造你的第一個全球總體經濟儀表板</h1>
+    <p>《AI 與經濟研究報告》工作坊講義 ｜ Streamlit + API 零環境快速上手指南</p>
+</header>
+
+<div class="container">
+
+    <!-- 第一部分：學習目標 -->
+    <div class="card">
+        <h2>🎯 學習目標與架構</h2>
+        <p>本練習旨在幫助學生跳過傳統本地端 Python 環境安裝，直接透過 <b>GitHub + Streamlit Cloud</b> 建構自主更新的動態經濟監測儀表板。</p>
+        <ul>
+            <li><b>資料來源</b>：FRED API（美國總體經濟數據）與 yfinance（全球金融市場數據）。</li>
+            <li><b>雲端架構</b>：GitHub 託管代碼 ➔ Streamlit Community Cloud 一鍵自動部署。</li>
+            <li><b>金鑰安全</b>：學習使用 <code>Streamlit Secrets</code> 保護個人 API Key。</li>
+        </ul>
+    </div>
+
+    <!-- 第二部分：3 步驟極簡實作流程 -->
+    <div class="card">
+        <h2>🚀 實作三步驟指引</h2>
+        
+        <h3>步驟 1：Fork 課程範本儲存庫</h3>
+        <ol>
+            <li>前往課程提供的 GitHub 專案頁面。</li>
+            <li>點擊右上角的 <span class="badge">Fork</span> 按鈕，將專案複製到自己的 GitHub 帳號底下。</li>
+        </ol>
+
+        <h3>步驟 2：一鍵部署至 Streamlit Cloud</h3>
+        <ol>
+            <li>登入 <a href="https://share.streamlit.io/" target="_blank">Streamlit Community Cloud</a>（使用 GitHub 帳號連動）。</li>
+            <li>點擊 <b>Create app</b> ➔ 選擇 <b>Yep, I have an app already</b>。</li>
+            <li>選取你剛才 Fork 的 Repository，確認 Main file path 為 <code>app.py</code>，最後點擊 <b>Deploy!</b>。</li>
+        </ol>
+
+        <h3>步驟 3：設定安全的 API Key (Streamlit Secrets)</h3>
+        <ol>
+            <li>在開啟的儀表板右下角點擊 <b>Manage app</b> ➔ <b>Settings</b>（齒輪圖示）。</li>
+            <li>點選左側的 <b>Secrets</b> 頁籤，貼入以下內容（請替換為你的 FRED API Key）：</li>
+        </ol>
+<pre><code>FRED_API_KEY = "你的_FRED_API_KEY_字串"</code></pre>
+        <ol start="3">
+            <li>點擊 <b>Save</b>，網頁將自動重載並帶入數據！</li>
+        </ol>
+    </div>
+
+    <!-- 第三部分：提示詞庫 (Prompt Library) -->
+    <div class="card">
+        <h2>💡 儀表板延伸提示詞 (Prompt Library)</h2>
+        <p>學生可以使用 ChatGPT、Claude 或 Gemini 輔助修改 <code>app.py</code>，實現更多儀表板功能。以下提供可直接複製使用的 Prompt 範本：</p>
+
+        <div class="prompt-box">
+            <div class="prompt-title">📌 提示詞 1：新增金融與總體指標</div>
+            <code>「我想在目前的 Streamlit 儀表板中新增『黃金現貨價格 (GC=F)』與『日本 10 年期國債殖利率』。請告訴我如何修改 app.py 中的 yfinance 與 FRED 抓取字典，並保持頁面佈局美觀。」</code>
+        </div>
+
+        <div class="prompt-box">
+            <div class="prompt-title">📌 提示詞 2：計算與繪製殖利率倒掛警示</div>
+            <code>「請協助我修改 Python 程式碼，使用 FRED API 計算『10 年期美債殖利率 (DGS10)』減去『2 年期美債殖利率 (DGS2)』的利差。若利差小於 0，請在 Streamlit 儀表板上顯示警示燈號（紅色 Warning），並繪製利差歷史折線圖。」</code>
+        </div>
+
+        <div class="prompt-box">
+            <div class="prompt-title">📌 提示詞 3：串接 Gemini API 自動生成經濟月報</div>
+            <code>「我想在 Streamlit 儀表板下方加入一個按鈕『產生 AI 總體經濟摘要』。點擊後會將最新抓取到的 CPI、失業率與利率數值作為上下文，調用 google-genai 介面自動產出一份 200 字的總體經濟短評。請提供完整的範例程式碼。」</code>
+        </div>
+
+        <div class="prompt-box">
+            <div class="prompt-title">📌 提示詞 4：加入資料下載與區間篩選功能</div>
+            <code>「請幫我的 Streamlit 儀表板加入一個日期範圍選擇器 (st.date_input)，讓使用者能自行選擇圖表的時間區間（例如近 3 個月、近 1 年或全部歷史數據），並在圖表下方提供一個 CSV 下載按鈕 (st.download_button)。」</code>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
