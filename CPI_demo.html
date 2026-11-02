@@ -42,6 +42,16 @@
             font-size: 0.95rem;
         }
 
+        .api-key-banner {
+            background-color: #fef3c7;
+            border-left: 4px solid #d97706;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -89,7 +99,8 @@
 
         .error {
             color: #ef4444;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 600;
         }
 
         footer {
@@ -108,8 +119,12 @@
         <p class="subtitle">數據來源：FRED (Federal Reserve Bank of St. Louis)</p>
     </header>
 
+    <div id="apiNotice" class="api-key-banner" style="display: none;">
+        ⚠️ <strong>提示：</strong> 您目前使用的是範例 API Key，若讀取受限，請先前往 <a href="https://fred.stlouisfed.org/docs/api/api_key.html" target="_blank">FRED 官網免費申請自己的 API Key</a> 並填入程式碼中。
+    </div>
+
     <div class="grid" id="dashboard">
-        <!-- 數據卡片由 JavaScript 動態生成 -->
+        <!-- 數據卡片將由 JavaScript 動態生成 -->
     </div>
 
     <footer>
@@ -118,53 +133,72 @@
 </div>
 
 <script>
+    // 🔑 請在單引號中填入您申請到的 32 位元 FRED API Key
     const API_KEY = 'c367186e94cfb1becdecf2c6d2a202bd';
 
+    // 🌐 校正後的全球主要國家 CPI 系列 ID (最新有效 Series IDs)
     const countries = [
         { name: "美國 (United States)", id: "CPIAUCSL", flag: "🇺🇸" },
         { name: "歐元區 (Euro Area)", id: "CP0000EZ19M086NEST", flag: "🇪🇺" },
-        { name: "日本 (Japan)", id: "JPNCPIALLMINMEI", flag: "🇯🇵" },
-        { name: "英國 (United Kingdom)", id: "GBRCPIALLMINMEI", flag: "🇬🇧" },
-        { name: "加拿大 (Canada)", id: "CANCPIALLMINMEI", flag: "🇨🇦" },
-        { name: "德國 (Germany)", id: "DEUCPIALLMINMEI", flag: "🇩🇪" }
+        { name: "日本 (Japan)", id: "CPALTT01JPM659N", flag: "🇯🇵" },
+        { name: "英國 (United Kingdom)", id: "CPALTT01GBM659N", flag: "🇬🇧" },
+        { name: "加拿大 (Canada)", id: "CPALTT01CAM659N", flag: "🇨🇦" },
+        { name: "德國 (Germany)", id: "CPALTT01DEM659N", flag: "🇩🇪" }
     ];
 
     const dashboard = document.getElementById('dashboard');
 
+    // 初始化卡片外觀
     function initCards() {
+        if (API_KEY === 'YOUR_FRED_API_KEY') {
+            document.getElementById('apiNotice').style.display = 'block';
+        }
+
         dashboard.innerHTML = countries.map(c => `
             <div class="card" id="card-${c.id}">
                 <div class="country-name">
                     <span>${c.name}</span>
                     <span>${c.flag}</span>
                 </div>
-                <div class="inflation-value loading" id="val-${c.id}">載入中...</div>
-                <div class="date-info" id="date-${c.id}">最新數據更新中</div>
+                <div class="inflation-value loading" id="val-${c.id}">資料讀取中...</div>
+                <div class="date-info" id="date-${c.id}">正在連接 FRED 資料庫</div>
             </div>
         `).join('');
     }
 
+    // 呼叫 API 抓取通膨資料
     async function fetchInflationData(seriesId) {
         const targetUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${API_KEY}&file_type=json&units=pc1&sort_order=desc&limit=1`;
-        const proxyUrl = `https://api.corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        
+        // 使用多重跨域 Proxy 機制，確保連線成功率
+        const proxyUrls = [
+            `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+        ];
 
-        try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('網路回應錯誤');
-            
-            const data = await response.json();
-            const latestObs = data.observations[0];
-            
-            return {
-                value: parseFloat(latestObs.value).toFixed(2),
-                date: latestObs.date
-            };
-        } catch (error) {
-            console.error(`無法取得 ${seriesId} 資料:`, error);
-            return null;
+        for (const proxyUrl of proxyUrls) {
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) continue;
+                
+                const data = await response.json();
+                if (data && data.observations && data.observations.length > 0) {
+                    const latestObs = data.observations[0];
+                    if (latestObs.value !== "." && !isNaN(parseFloat(latestObs.value))) {
+                        return {
+                            value: parseFloat(latestObs.value).toFixed(2),
+                            date: latestObs.date
+                        };
+                    }
+                }
+            } catch (error) {
+                console.warn(`代理連線重試中 (${seriesId})...`, error);
+            }
         }
+        return null;
     }
 
+    // 載入所有國家數據並更新畫面
     async function loadDashboard() {
         initCards();
 
@@ -173,15 +207,18 @@
             const valEl = document.getElementById(`val-${country.id}`);
             const dateEl = document.getElementById(`date-${country.id}`);
 
-            if (result && result.value !== "NaN") {
+            if (result) {
                 valEl.classList.remove('loading');
+                valEl.style.color = '#2563eb';
                 valEl.innerText = `${result.value}%`;
                 dateEl.innerText = `統計基期：${result.date}`;
             } else {
                 valEl.classList.remove('loading');
                 valEl.classList.add('error');
                 valEl.innerText = '讀取失敗';
-                dateEl.innerText = '請檢查 API Key 或 Series ID';
+                dateEl.innerText = API_KEY === 'YOUR_FRED_API_KEY' 
+                    ? '請填入有效的 FRED API Key' 
+                    : '請檢查網路連線或金鑰權限';
             }
         }
     }
