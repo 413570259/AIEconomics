@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美國即時通膨率 (CPI YoY) 與歷史 10 期序列</title>
+    <title>美國即時通膨率 (CPI YoY) - API 診斷頁面</title>
     <style>
         :root {
             --primary-color: #0f172a;
@@ -37,31 +37,15 @@
             margin-bottom: 8px;
         }
 
-        p.subtitle {
-            color: #64748b;
-            font-size: 0.95rem;
-        }
-
-        .status-banner {
-            padding: 12px 16px;
-            margin-bottom: 24px;
+        .debug-card {
+            background-color: #1e293b;
+            color: #f8fafc;
             border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-family: monospace;
             font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .status-warning {
-            background-color: #fffbebf5;
-            border: 1px solid #fcd34d;
-            color: #b45309;
-        }
-
-        .status-success {
-            background-color: #f0fdf4;
-            border: 1px solid #86efac;
-            color: #15803d;
+            line-height: 1.5;
         }
 
         .card {
@@ -126,24 +110,20 @@
             font-size: 1.2rem;
         }
 
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 0.85rem;
-            color: #94a3b8;
-        }
+        .badge-success { background: #16a34a; color: white; padding: 2px 8px; border-radius: 4px; }
+        .badge-danger { background: #dc2626; color: white; padding: 2px 8px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>美國即時通膨率 (CPI YoY) 與歷史 10 期序列</h1>
-        <p class="subtitle">僅單一請求美國數據，避免多重 API 請求限制</p>
+        <h1>美國 CPI 即時連線診斷儀表板</h1>
     </header>
 
-    <div id="statusNotice" class="status-banner status-warning">
-        <span>⚠️ 正在連線 FRED 伺服器...</span>
+    <!-- 除錯視窗 -->
+    <div class="debug-card" id="debugLog">
+        🔍 系統自我檢測中...<br>
     </div>
 
     <!-- 最新一期重點卡片 -->
@@ -163,7 +143,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>期數 / 統計日期</th>
+                        <th>統計日期</th>
                         <th>CPI 年增率 (YoY %)</th>
                         <th>資料來源</th>
                     </tr>
@@ -174,49 +154,59 @@
             </table>
         </div>
     </div>
-
-    <footer>
-        <p>© 即時經濟數據測試網頁 | 使用 FRED 原生 API / JSONP</p>
-    </footer>
 </div>
 
 <script>
-    // 🔑 請在此處填入您的 32 位元 FRED API Key
-    const API_KEY = 'c367186e94cfb1becdecf2c6d2a202bd';
-    const SERIES_ID = 'CPIAUCSL'; // 美國消費者物價指數
+    // 🔑 1. 請在此處填入您向 FRED 申請到的 32 字元 API Key
+    const API_KEY = '2ed09da231f98ab0d3eddfdcecd02875'; 
 
-    // 備援預設資料（當未填 Key 或網路請求受限時顯示）
-    const fallbackData = [
-        { date: "2026-09-01", value: "3.70" },
-        { date: "2026-08-01", value: "3.60" },
-        { date: "2026-07-01", value: "3.50" },
-        { date: "2026-06-01", value: "3.40" },
-        { date: "2026-05-01", value: "3.30" },
-        { date: "2026-04-01", value: "3.40" },
-        { date: "2026-03-01", value: "3.50" },
-        { date: "2026-02-01", value: "3.20" },
-        { date: "2026-01-01", value: "3.10" },
-        { date: "2025-12-01", value: "3.40" }
-    ];
+    const SERIES_ID = 'CPIAUCSL';
+    const debugLog = document.getElementById('debugLog');
 
-    // 發起 1 次 JSONP 請求，抓取最近 10 期 (limit=10, units=pc1 計算年增率)
+    function log(msg) {
+        debugLog.innerHTML += msg + '<br>';
+    }
+
     function fetchUSData() {
         return new Promise((resolve) => {
-            if (!API_KEY || API_KEY === 'c367186e94cfb1becdecf2c6d2a202bd' || API_KEY.length !== 32) {
+            // 清理前後空白
+            const cleanKey = API_KEY.trim();
+
+            log(`🔑 API Key 字元數長度檢查：<strong>${cleanKey.length}</strong> 字元`);
+            
+            if (!cleanKey || cleanKey === '2ed09da231f98ab0d3eddfdcecd02875') {
+                log('❌ <span class="badge-danger">失敗原因</span>：您尚未更換 API_KEY 變數（仍為預設字串）。');
                 resolve(null);
                 return;
             }
 
-            const cbName = 'fred_us_cb_' + Math.floor(Math.random() * 100000);
+            if (cleanKey.length !== 32) {
+                log(`❌ <span class="badge-danger">失敗原因</span>：Key 長度不正確（應為 32 字元，目前為 ${cleanKey.length} 字元）。請檢查是否複製到名稱或包含了前後多餘字元。`);
+                resolve(null);
+                return;
+            }
+
+            const cbName = 'fred_cb_' + Math.floor(Math.random() * 100000);
+            log(`🌐 正在向 FRED 發起 JSONP 請求 (Callback: ${cbName})...`);
+
             const timeout = setTimeout(() => {
                 delete window[cbName];
+                log('⏱️ <span class="badge-danger">連線逾時</span>：FRED 伺服器未於 5 秒內回應，可能是網路封鎖或 file:// 限制。');
                 resolve(null);
-            }, 4000);
+            }, 5000);
 
             window[cbName] = function(data) {
                 clearTimeout(timeout);
                 delete window[cbName];
+
+                if (data.error_code) {
+                    log(`❌ <span class="badge-danger">FRED API 拒絕存取</span> (${data.error_code}): ${data.error_message}`);
+                    resolve(null);
+                    return;
+                }
+
                 if (data && data.observations && data.observations.length > 0) {
+                    log('✅ <span class="badge-success">連線成功</span>：已成功從 FRED 撈取資料！');
                     const validObs = data.observations
                         .filter(o => o.value !== "." && !isNaN(parseFloat(o.value)))
                         .map(o => ({
@@ -226,57 +216,51 @@
                     resolve(validObs);
                     return;
                 }
+                log('⚠️ FRED 回傳空資料。');
                 resolve(null);
             };
 
             const script = document.createElement('script');
-            script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${API_KEY}&file_type=jsonp&callback=${cbName}&units=pc1&sort_order=desc&limit=10`;
+            script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${cleanKey}&file_type=jsonp&callback=${cbName}&units=pc1&sort_order=desc&limit=10`;
+            
             script.onerror = () => {
                 clearTimeout(timeout);
                 delete window[cbName];
+                log('❌ <span class="badge-danger">Script 載入失敗</span>：瀏覽器阻擋了跨域腳本加載 (CORS / AdBlock / File Protocol 限制)。');
                 resolve(null);
             };
+
             document.body.appendChild(script);
         });
     }
 
     async function init() {
-        const noticeEl = document.getElementById('statusNotice');
         const latestValEl = document.getElementById('latestVal');
         const latestDateEl = document.getElementById('latestDate');
         const tableBody = document.getElementById('seriesTable');
 
         const observations = await fetchUSData();
 
-        let displayData = [];
-        let sourceName = "";
-
         if (observations && observations.length > 0) {
-            displayData = observations;
-            sourceName = "FRED 官方 API";
-            noticeEl.className = 'status-banner status-success';
-            noticeEl.innerHTML = '<span>✅ 連線成功！已成功取得 FRED 官方最新 10 期美國通膨數據。</span>';
+            const latest = observations[0];
+            latestValEl.classList.remove('loading');
+            latestValEl.innerText = `${latest.value}%`;
+            latestDateEl.innerText = `最新統計基期：${latest.date} (FRED API)`;
+
+            tableBody.innerHTML = observations.map((item, index) => `
+                <tr>
+                    <td><strong>${item.date}</strong> ${index === 0 ? '<span style="color:#2563eb; font-size:0.8rem; margin-left:4px;">(最新期)</span>' : ''}</td>
+                    <td><span style="font-weight:bold; color:#2563eb;">${item.value}%</span></td>
+                    <td>FRED 官方 API</td>
+                </tr>
+            `).join('');
         } else {
-            displayData = fallbackData;
-            sourceName = "預設歷史資料庫 (備援)";
-            noticeEl.className = 'status-banner status-warning';
-            noticeEl.innerHTML = '<span>ℹ️ 未填寫有效 API Key 或請求受限，已啟用備援時間序列展示。</span>';
+            latestValEl.classList.remove('loading');
+            latestValEl.style.color = '#ef4444';
+            latestValEl.innerText = '讀取失敗';
+            latestDateEl.innerText = '請查看上方黑色區塊的診斷訊息';
+            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444;">連線失敗，請依診斷訊息修復</td></tr>`;
         }
-
-        // 更新最新一期
-        const latest = displayData[0];
-        latestValEl.classList.remove('loading');
-        latestValEl.innerText = `${latest.value}%`;
-        latestDateEl.innerText = `最新統計基期：${latest.date} (${sourceName})`;
-
-        // 渲染過去 10 期時間序列表格
-        tableBody.innerHTML = displayData.map((item, index) => `
-            <tr>
-                <td><strong>${item.date}</strong> ${index === 0 ? '<span style="color:#2563eb; font-size:0.8rem; margin-left:4px;">(最新期)</span>' : ''}</td>
-                <td><span style="font-weight:bold; color:#2563eb;">${item.value}%</span></td>
-                <td>${sourceName}</td>
-            </tr>
-        `).join('');
     }
 
     window.onload = init;
