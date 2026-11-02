@@ -1,374 +1,244 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美國即時通膨率 (CPI YoY) 時間序列儀表板</title>
-    <style>
-        :root {
-            --primary-color: #0f172a;
-            --card-bg: #ffffff;
-            --bg-color: #f8fafc;
-            --text-color: #334155;
-            --accent-color: #2563eb;
-            --border-color: #e2e8f0;
-            --success-color: #16a34a;
-            --danger-color: #dc2626;
-        }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.75;
+        color: var(--text-color);
+        background-color: var(--bg-color);
+        margin: 0;
+        padding: 24px;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 24px;
-            line-height: 1.6;
-        }
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: var(--card-bg);
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
 
-        .container {
-            max-width: 850px;
-            margin: 0 auto;
-        }
+    h1 {
+        color: var(--primary-color);
+        border-bottom: 3px solid var(--secondary-color);
+        padding-bottom: 12px;
+        margin-top: 0;
+        font-size: 1.8rem;
+    }
 
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
+    h2 {
+        color: var(--secondary-color);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+        margin-top: 36px;
+        font-size: 1.4rem;
+    }
 
-        h1 {
-            color: var(--primary-color);
-            margin-bottom: 8px;
-            font-size: 1.8rem;
-        }
+    h3 {
+        color: var(--primary-color);
+        margin-top: 24px;
+        font-size: 1.15rem;
+    }
 
-        p.subtitle {
-            color: #64748b;
-            font-size: 0.95rem;
-            margin: 0;
-        }
+    p, li {
+        font-size: 1rem;
+    }
 
-        /* API Key 設定彈窗/區域 */
-        .key-settings-card {
-            background-color: #ffffff;
-            border: 2px solid var(--accent-color);
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-        }
+    ul, ol {
+        padding-left: 24px;
+    }
 
-        .key-input-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 12px;
-        }
+    li {
+        margin-bottom: 8px;
+    }
 
-        .key-input-group input {
-            flex: 1;
-            padding: 10px 14px;
-            font-size: 0.95rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            outline: none;
-            font-family: monospace;
-        }
+    .highlight-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin: 24px 0;
+    }
 
-        .key-input-group input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-        }
+    .capability-card {
+        background-color: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-left: 4px solid var(--secondary-color);
+        border-radius: 8px;
+        padding: 20px;
+    }
 
-        .btn {
-            padding: 10px 18px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+    .capability-card h4 {
+        margin: 0 0 8px 0;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+    }
 
-        .btn-primary {
-            background-color: var(--accent-color);
-            color: white;
-        }
+    .resource-box {
+        background-color: #eff6ff;
+        border-left: 4px solid var(--secondary-color);
+        padding: 16px 20px;
+        margin: 24px 0;
+        border-radius: 0 8px 8px 0;
+    }
 
-        .btn-primary:hover {
-            background-color: #1d4ed8;
-        }
+    .quote-box {
+        background-color: #fffbeb;
+        border-left: 4px solid var(--accent-color);
+        padding: 16px 20px;
+        margin: 24px 0;
+        border-radius: 0 8px 8px 0;
+    }
 
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: #64748b;
-        }
+    .formula-box {
+        background-color: #f1f5f9;
+        border-left: 4px solid var(--primary-color);
+        padding: 14px 20px;
+        margin: 16px 0;
+        font-family: "Courier New", Courier, monospace;
+        font-weight: bold;
+        border-radius: 4px;
+    }
 
-        .btn-outline:hover {
-            background-color: #f1f5f9;
-            color: var(--text-color);
-        }
+    .table-container {
+        overflow-x: auto;
+        margin: 24px 0;
+    }
 
-        .status-banner {
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
 
-        .status-info { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-        .status-success { background-color: #f0fdf4; border: 1px solid #86efac; color: #15803d; }
-        .status-danger { background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+    th, td {
+        border: 1px solid var(--border-color);
+        padding: 12px 16px;
+    }
 
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            margin-bottom: 24px;
-        }
+    th {
+        background-color: #f1f5f9;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
 
-        .country-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    tr:nth-child(even) {
+        background-color: #f8fafc;
+    }
 
-        .inflation-value {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--accent-color);
-            margin: 16px 0 8px 0;
-        }
+    .badge {
+        display: inline-block;
+        background-color: #e0e7ff;
+        color: #3730a3;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
 
-        .date-info {
-            font-size: 0.95rem;
-            color: #64748b;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            margin-top: 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.95rem;
-        }
-
-        th, td {
-            border: 1px solid var(--border-color);
-            padding: 10px 14px;
-        }
-
-        th {
-            background-color: #f1f5f9;
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .loading {
-            color: #94a3b8;
-            font-size: 1.2rem;
-        }
-
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 0.85rem;
-            color: #94a3b8;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <header>
-        <h1>美國即時通膨率 (CPI YoY) 數據儀表板</h1>
-        <p class="subtitle">AI 與經濟分析課程專用 | FRED 官方 API 自動化串接</p>
-    </header>
-
-    <!-- API Key 輸入與管理區塊 -->
-    <div class="key-settings-card">
-        <label for="userApiKey" style="font-weight: 600; color: var(--primary-color);">🔑 FRED API Key 設定</label>
-        <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">
-            請輸入您從 FRED 官網申請到的 32 字元 Key（金鑰將安全存在您的個人瀏覽器中，不寫死於伺服器上）。
-        </p>
-        <div class="key-input-group">
-            <input type="password" id="userApiKey" placeholder="貼上 32 位元 FRED API Key (例如: a1b2c3d4...)" autocomplete="off">
-            <button class="btn btn-primary" onclick="saveKeyAndFetch()">儲存並連線</button>
-            <button class="btn btn-outline" onclick="clearKey()">清除金鑰</button>
-        </div>
-    </div>
-
-    <!-- 即時連線狀態標籤 -->
-    <div id="statusBanner" class="status-banner status-info">
-        <span>ℹ️ 請在上方輸入 FRED API Key 以開始讀取最新數據</span>
-    </div>
-
-    <!-- 最新一期數據卡片 -->
-    <div class="card">
-        <div class="country-name">
-            <span>美國 (United States) - CPI Headline YoY</span>
-            <span>🇺🇸</span>
-        </div>
-        <div class="inflation-value loading" id="latestVal">---</div>
-        <div class="date-info" id="latestDate">最新統計基期：尚未連線</div>
-    </div>
-
-    <!-- 過去 12 期歷史時間序列表格 -->
-    <div class="card">
-        <h3>📊 近 12 個月通膨率 (CPI YoY %) 時間序列</h3>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>統計日期 (YYYY-MM-DD)</th>
-                        <th>CPI 年增率 (YoY %)</th>
-                        <th>資料來源</th>
-                    </tr>
-                </thead>
-                <tbody id="seriesTable">
-                    <tr><td colspan="3" style="text-align:center; color:#94a3b8;">等待 API Key 連線中...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <footer>
-        <p>© 2026 AI與經濟分析課程 | 動態 API 金鑰管理介面</p>
-    </footer>
+    footer {
+        margin-top: 50px;
+        text-align: center;
+        font-size: 0.9em;
+        color: #64748b;
+        border-top: 1px solid var(--border-color);
+        padding-top: 20px;
+    }
+</style>
+<div class="quote-box">
+    <h3>💡 學習目標：從「抓資料」升級為「經濟學智能戰情室」</h3>
+    <p>當同學成功學會了非同步 <code>fetch()</code>、JSON 解析與 GitHub Pages 靜態部署後，網頁就不再只是一張寫死的報告，而是一個具有**「自我持續更新」**能力的動態分析工具。以下為同學們展示利用無 Key 或開放 API 可以實現的四大進階階段。</p>
 </div>
 
-<script>
-    const SERIES_ID = 'CPIAUCSL'; // FRED 美國 CPI 年增率系列代碼
-    const STORAGE_KEY = 'FRED_USER_API_KEY';
+<h2>一、 成果展現四大等級 (Competency Roadmap)</h2>
 
-    // 頁面載入時檢查 local_storage 是否已保存金鑰
-    window.onload = function() {
-        const savedKey = localStorage.getItem(STORAGE_KEY);
-        if (savedKey) {
-            document.getElementById('userApiKey').value = savedKey;
-            fetchDataWithKey(savedKey);
-        }
-    };
+<div class="highlight-grid">
+    <div class="capability-card">
+        <h4>Level 1：即時關鍵數據卡片</h4>
+        <p><strong>實現功能：</strong> 自動顯示最新通膨率、即時美元匯率、WTI 原油價格卡片。</p>
+        <p><strong>經濟學意義：</strong> 取代人工複製貼上，確保簡報或報告展示時永遠顯示最新發布的權威數字。</p>
+    </div>
 
-    // 儲存金鑰並觸發數據抓取
-    function saveKeyAndFetch() {
-        const keyInput = document.getElementById('userApiKey').value.trim();
-        if (!keyInput) {
-            updateStatus('⚠️ 請先輸入 API Key！', 'danger');
-            return;
-        }
-        if (keyInput.length !== 32) {
-            updateStatus(`⚠️ 金鑰長度不正確（應為 32 字元，您輸入了 ${keyInput.length} 字元）`, 'danger');
-            return;
-        }
+    <div class="capability-card">
+        <h4>Level 2：互動式時間序列圖表</h4>
+        <p><strong>實現功能：</strong> 整合 Chart.js，拉取過去 12 到 60 個月的 CPI 物價指數，繪製折線圖與動態選單。</p>
+        <p><strong>經濟學意義：</strong> 動態比較核心 CPI 與 Headline CPI 的基期效應與趨勢傳導。</p>
+    </div>
 
-        // 保存於個人瀏覽器本機儲存區
-        localStorage.setItem(STORAGE_KEY, keyInput);
-        fetchDataWithKey(keyInput);
-    }
+    <div class="capability-card">
+        <h4>Level 3：跨指標連動與情境試算</h4>
+        <p><strong>實現功能：</strong> 同時抓取匯率、原油與糧食指數，提供滑桿（Slider）讓使用者調整預估參數。</p>
+        <p><strong>經濟學意義：</strong> 計算進口物價對核心商品 CPI 的敏感度分析（Sensitivity Analysis）。</p>
+    </div>
 
-    // 清除金鑰
-    function clearKey() {
-        localStorage.removeItem(STORAGE_KEY);
-        document.getElementById('userApiKey').value = '';
-        updateStatus('ℹ️ 金鑰已清除，請重新輸入以連線。', 'info');
-        document.getElementById('latestVal').innerText = '---';
-        document.getElementById('latestVal').classList.add('loading');
-        document.getElementById('latestDate').innerText = '最新統計基期：尚未連線';
-        document.getElementById('seriesTable').innerHTML = '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">等待 API Key 連線中...</td></tr>';
-    }
+    <div class="capability-card">
+        <h4>Level 4：AI 智能觀點與自動解讀</h4>
+        <p><strong>實現功能：</strong> 自動根據最新月增率（MoM）與年增率（YoY），透過規則或 LLM 產生經濟學短評。</p>
+        <p><strong>經濟學意義：</strong> 自動生成如同高盛或聯準會研究報告般的高品質總體經濟分析短評。</p>
+    </div>
+</div>
 
-    // 狀態更新輔助函式
-    function updateStatus(msg, type) {
-        const banner = document.getElementById('statusBanner');
-        banner.className = `status-banner status-${type}`;
-        banner.innerHTML = `<span>${msg}</span>`;
-    }
+<h2>二、 實務情境：經濟專題可以這樣做</h2>
 
-    // 原生 JSONP 安全連線機制 (完全不經第三方轉接)
-    function fetchDataWithKey(apiKey) {
-        updateStatus('🔄 正在連線 FRED 官方資料庫...', 'info');
+<h3>1. 匯率與通膨傳導分析（Pass-Through Effect）</h3>
+<p>結合 Frankfurter API 抓取的 USD/TWD 匯率與美國 CPI，計算公式：</p>
+<div class="formula-box">
+    Imported Inflation Contribution = &Delta; Exchangerate<sub>YoY</sub> &times; Import Weight
+</div>
+<ul>
+    <li>同學可以在網頁上呈現：匯率波動對核心商品進口成本的推升幅度。</li>
+</ul>
 
-        const cbName = 'fred_cb_' + Math.floor(Math.random() * 100000);
-        const timeout = setTimeout(() => {
-            delete window[cbName];
-            updateStatus('❌ 連線逾時！請檢查 API Key 是否正確或網路狀態。', 'danger');
-        }, 6000);
+<h3>2. 能源通膨（Energy Services）動態預測</h3>
+<p>透過開放數據串接國際原油走勢（WTI Crude），即時估算下個月汽油與運輸服務 CPI 的月增率情境。範例公式：</p>
+<div class="formula-box">
+    Forecast CPI<sub>Energy</sub> = &beta;<sub>0</sub> + &beta;<sub>1</sub> &times; WTI<sub>t</sub> + &varepsilon;<sub>t</sub>
+</div>
 
-        window[cbName] = function(data) {
-            clearTimeout(timeout);
-            delete window[cbName];
-
-            if (data.error_code) {
-                updateStatus(`❌ API 驗證失敗 (${data.error_code}): ${data.error_message}`, 'danger');
-                return;
-            }
-
-            if (data && data.observations && data.observations.length > 0) {
-                updateStatus('✅ 成功從 FRED 官方 API 讀取近 12 期最新數據！', 'success');
-                const validObs = data.observations
-                    .filter(o => o.value !== "." && !isNaN(parseFloat(o.value)))
-                    .map(o => ({
-                        date: o.date,
-                        value: parseFloat(o.value).toFixed(2)
-                    }));
-                
-                renderDashboard(validObs);
-            } else {
-                updateStatus('⚠️ FRED 伺服器未傳回數據。', 'danger');
-            }
-        };
-
-        // 發起單一請求（獲取最近 12 期，units=pc1 計算與去年同期的 YoY%）
-        const script = document.createElement('script');
-        script.src = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${apiKey}&file_type=jsonp&callback=${cbName}&units=pc1&sort_order=desc&limit=12`;
-        
-        script.onerror = () => {
-            clearTimeout(timeout);
-            delete window[cbName];
-            updateStatus('❌ 連線失敗：瀏覽器安全機制阻擋了請求。', 'danger');
-        };
-
-        document.body.appendChild(script);
-    }
-
-    // 渲染資料至 DOM
-    function renderDashboard(observations) {
-        if (!observations || observations.length === 0) return;
-
-        const latest = observations[0];
-        const latestValEl = document.getElementById('latestVal');
-        const latestDateEl = document.getElementById('latestDate');
-        const tableBody = document.getElementById('seriesTable');
-
-        latestValEl.classList.remove('loading');
-        latestValEl.innerText = `${latest.value}%`;
-        latestDateEl.innerText = `最新統計基期：${latest.date} (FRED 官方 API)`;
-
-        tableBody.innerHTML = observations.map((item, index) => `
+<h2>三、 免費 API 與工具擴充庫推薦</h2>
+<div class="table-container">
+    <table>
+        <thead>
             <tr>
-                <td><strong>${item.date}</strong> ${index === 0 ? '<span style="color:#2563eb; font-size:0.8rem; margin-left:4px;">(最新期)</span>' : ''}</td>
-                <td><span style="font-weight:bold; color:#2563eb;">${item.value}%</span></td>
-                <td>FRED (St. Louis Fed)</td>
+                <th>數據類型</th>
+                <th>推薦開放 API 源</th>
+                <th>CORS / 存取屬性</th>
+                <th>課程專題建議應用</th>
             </tr>
-        `).join('');
-    }
-</script>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>國際匯率</strong></td>
+                <td>Frankfurter API</td>
+                <td><span class="badge">完全免 Key / 100% CORS</span></td>
+                <td>歐元、日圓、美元即時匯率，進行進口物價分析。</td>
+            </tr>
+            <tr>
+                <td><strong>美國月度 CPI</strong></td>
+                <td>jsDelivr / Datasets Open API</td>
+                <td><span class="badge">完全免 Key / 100% CORS</span></td>
+                <td>取得 BLS 歷史 10 年逐月 CPI 指數與年增率。</td>
+            </tr>
+            <tr>
+                <td><strong>台灣央行/主計總處</strong></td>
+                <td>政府資料開放平臺 (data.gov.tw)</td>
+                <td><span class="badge">免 Key / JSON 格式</span></td>
+                <td>台灣消費者物價指數與進出口總額。</td>
+            </tr>
+            <tr>
+                <td><strong>視覺化圖表庫</strong></td>
+                <td>Chart.js / CanvasJS</td>
+                <td><span class="badge">CDN 直接引入</span></td>
+                <td>將 JavaScript fetch 回來的陣列轉為動態互動折線圖。</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
-</body>
-</html>
+<h2>四、 給同學們的專題寫作與展示建議</h2>
+<div class="resource-box">
+    <ul>
+        <li><strong>一鍵展示部署：</strong> 所有專題頁面均可免費儲存於 GitHub Pages，直接作為面試與研究所備審的作品集網址。</li>
+        <li><strong>防錯機制與用戶體驗：</strong> 在 JS 中加入 <code>try...catch</code> 與「資料載入中」畫面，展現專業的網頁開發工程素養。</li>
+        <li><strong>經濟學解釋優先：</strong> API 與數據是工具，最核心的是頁面上針對數據變化所撰寫的經濟學解析。</li>
+    </ul>
+</div>
+已為您製作好一份專屬教學 HTML 檔案（api_capabilities_guide.html），方便您直接發給同學或開在講義區展示！這份講義明確為同學們梳理出使用免費/開放 API 能夠完成的 四大成長等級（Roadmap）：Level 1（基礎）：即時關鍵數據卡片（自動顯示最新通膨、匯率、原油）。Level 2（進階）：互動式時間序列圖表（串接 Chart.js 自動畫出 10 年物價趨勢折線圖）。Level 3（專業）：跨指標連動與情境模擬（試算匯率對進口物價的傳導效果 $YoY$）。Level 4（智能）：AI 觀點自動寫作（自動根據數據產生經濟學評論）。同學看到這個地圖後，便能非常清楚知道這項技術能為他們的期末專題報告與個人作品集加分到什麼程度！
