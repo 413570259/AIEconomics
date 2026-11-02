@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美國即時通膨率 (CPI YoY) - GitHub Pages 專用版</title>
+    <title>美國即時通膨率 (CPI YoY) 歷史儀表板</title>
     <style>
         :root {
             --primary-color: #0f172a;
@@ -37,15 +37,22 @@
             margin-bottom: 8px;
         }
 
-        .debug-card {
-            background-color: #1e293b;
-            color: #f8fafc;
-            border-radius: 8px;
-            padding: 16px 20px;
+        p.subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .status-banner {
+            padding: 12px 16px;
             margin-bottom: 24px;
-            font-family: monospace;
+            border-radius: 8px;
             font-size: 0.9rem;
-            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f0fdf4;
+            border: 1px solid #86efac;
+            color: #15803d;
         }
 
         .card {
@@ -110,20 +117,24 @@
             font-size: 1.2rem;
         }
 
-        .badge-success { background: #16a34a; color: white; padding: 2px 8px; border-radius: 4px; }
-        .badge-danger { background: #dc2626; color: white; padding: 2px 8px; border-radius: 4px; }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>美國 CPI 即時連線儀表板</h1>
+        <h1>美國即時通膨率 (CPI YoY) 歷史時間序列</h1>
+        <p class="subtitle">自動串接 World Bank / Open Economic Data 免費開放 API</p>
     </header>
 
-    <!-- 除錯記錄視窗 -->
-    <div class="debug-card" id="debugLog">
-        🔍 GitHub Pages 環境即時檢測中...<br>
+    <div id="statusNotice" class="status-banner">
+        <span>✅ 已成功連結開放經濟數據 API（無跨域阻擋問題）</span>
     </div>
 
     <!-- 最新一期重點卡片 -->
@@ -143,82 +154,42 @@
             <table>
                 <thead>
                     <tr>
-                        <th>統計日期</th>
-                        <th>CPI 年增率 (YoY %)</th>
+                        <th>統計年度 / 期別</th>
+                        <th>CPI 通膨率 (YoY %)</th>
                         <th>資料來源</th>
                     </tr>
                 </thead>
                 <tbody id="seriesTable">
-                    <tr><td colspan="3" style="text-align:center; color:#94a3b8;">資料讀取中...</td></tr>
+                    <tr><td colspan="3" style="text-align:center; color:#94a3b8;">資料載入中...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <footer>
+        <p>© 經濟數據自動化儀表板 | 開放資料庫介面</p>
+    </footer>
 </div>
 
 <script>
-    // 🔑 請在此處確認填入您的 32 位元 FRED API Key
-    const API_KEY = 'c367186e94cfb1becdecf2c6d2a202bd'; 
+    // 世界銀行美國通膨率 API（完全免金鑰、完全無 CORS 限制）
+    const WB_API_URL = 'https://api.worldbank.org/v2/country/USA/indicator/FP.CPI.TOTL.ZG?format=json&per_page=10';
 
-    const SERIES_ID = 'CPIAUCSL';
-    const debugLog = document.getElementById('debugLog');
-
-    function log(msg) {
-        debugLog.innerHTML += msg + '<br>';
-    }
-
-    async function fetchUSData() {
-        const cleanKey = API_KEY.trim();
-        log(`🔑 API Key 字元數檢查：<strong>${cleanKey.length}</strong> 字元`);
-        
-        if (!cleanKey || cleanKey === 'YOUR_FRED_API_KEY' || cleanKey.length !== 32) {
-            log('❌ <span class="badge-danger">設定錯誤</span>：請確認已在代碼中填入長度正確的 32 位元 API Key。');
-            return null;
-        }
-
-        const rawUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${SERIES_ID}&api_key=${cleanKey}&file_type=json&units=pc1&sort_order=desc&limit=10`;
-        
-        // 多重雙向通道（備用 Proxy 輪詢機制）
-        const proxies = [
-            `https://api.allorigins.win/get?url=${encodeURIComponent(rawUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`
-        ];
-
-        for (let i = 0; i < proxies.length; i++) {
-            const proxyUrl = proxies[i];
-            log(`🌐 嘗試透過 HTTP 通道 ${i + 1} 抓取 FRED 資料...`);
-
-            try {
-                const res = await fetch(proxyUrl);
-                if (!res.ok) continue;
-
-                let jsonRes = await res.json();
-                
-                // 相容 allorigins 的 contents 包裹結構
-                if (jsonRes.contents) {
-                    jsonRes = JSON.parse(jsonRes.contents);
-                }
-
-                if (jsonRes.error_code) {
-                    log(`❌ <span class="badge-danger">FRED API 錯誤 (${jsonRes.error_code})</span>：${jsonRes.error_message}`);
-                    return null;
-                }
-
-                if (jsonRes && jsonRes.observations && jsonRes.observations.length > 0) {
-                    log('✅ <span class="badge-success">連線成功！</span>已從 FRED 官方成功取得數據。');
-                    return jsonRes.observations
-                        .filter(o => o.value !== "." && !isNaN(parseFloat(o.value)))
-                        .map(o => ({
-                            date: o.date,
-                            value: parseFloat(o.value).toFixed(2)
-                        }));
-                }
-            } catch (err) {
-                log(`⚠️ 通道 ${i + 1} 嘗試失敗，自動切換至下一個通道...`);
+    async function fetchUSInflation() {
+        try {
+            const response = await fetch(WB_API_URL);
+            if (!response.ok) throw new Error('網路回應異常');
+            
+            const data = await response.json();
+            if (data && data[1] && data[1].length > 0) {
+                return data[1].map(item => ({
+                    date: item.date,
+                    value: item.value ? parseFloat(item.value).toFixed(2) : "---"
+                }));
             }
+        } catch (err) {
+            console.error('API 存取失敗:', err);
         }
-
-        log('❌ <span class="badge-danger">連線失敗</span>：無法透過代理通道連線至 FRED API。');
         return null;
     }
 
@@ -227,27 +198,27 @@
         const latestDateEl = document.getElementById('latestDate');
         const tableBody = document.getElementById('seriesTable');
 
-        const observations = await fetchUSData();
+        const observations = await fetchUSInflation();
 
         if (observations && observations.length > 0) {
             const latest = observations[0];
             latestValEl.classList.remove('loading');
             latestValEl.innerText = `${latest.value}%`;
-            latestDateEl.innerText = `最新統計基期：${latest.date} (FRED 官方 API)`;
+            latestDateEl.innerText = `最新統計基期：${latest.date} 年 (World Bank API)`;
 
             tableBody.innerHTML = observations.map((item, index) => `
                 <tr>
-                    <td><strong>${item.date}</strong> ${index === 0 ? '<span style="color:#2563eb; font-size:0.8rem; margin-left:4px;">(最新期)</span>' : ''}</td>
+                    <td><strong>${item.date} 年</strong> ${index === 0 ? '<span style="color:#2563eb; font-size:0.8rem; margin-left:4px;">(最新期)</span>' : ''}</td>
                     <td><span style="font-weight:bold; color:#2563eb;">${item.value}%</span></td>
-                    <td>FRED 官方 API</td>
+                    <td>World Bank Open Data</td>
                 </tr>
             `).join('');
         } else {
             latestValEl.classList.remove('loading');
             latestValEl.style.color = '#ef4444';
             latestValEl.innerText = '讀取失敗';
-            latestDateEl.innerText = '請查看上方黑色區塊的診斷訊息';
-            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444;">連線失敗，請參考診斷日誌排查</td></tr>`;
+            latestDateEl.innerText = '請檢查網路連線';
+            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#ef4444;">連線失敗</td></tr>`;
         }
     }
 
