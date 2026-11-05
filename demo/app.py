@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import yfinance as yf
 from fredapi import Fred
-import google.generativeai as genai
+from google import genai  # 引入 Google GenAI SDK
 
 # 頁面基本配置
 st.set_page_config(page_title="總體經濟與金融即時儀表板", layout="wide")
@@ -15,18 +15,17 @@ st.sidebar.header("⚙️ 設定與金鑰")
 # 1. FRED API Key 設定
 if "FRED_API_KEY" in st.secrets:
     fred_key = st.secrets["FRED_API_KEY"]
-    st.sidebar.success("已自動讀取 FRED API Key！")
+    st.sidebar.success("已自動讀取 FRED Secrets 金鑰！")
 else:
     fred_key = st.sidebar.text_input("請輸入你的 FRED API Key:", type="password")
 
-# 2. Gemini API Key 設定
+# 2. Gemini API Key 設定（優先讀取 Secrets，若無則讓使用者在側邊欄輸入）
 if "GEMINI_API_KEY" in st.secrets:
     gemini_key = st.secrets["GEMINI_API_KEY"]
-    st.sidebar.success("已自動讀取 Gemini API Key！")
+    st.sidebar.success("已自動讀取 Gemini Secrets 金鑰！")
 else:
-    gemini_key = st.sidebar.text_input("請輸入你的 Gemini API Key:", type="password", help="用於產生 AI 總體經濟摘要")
+    gemini_key = st.sidebar.text_input("請輸入你的 Gemini API Key:", type="password", help="用於產出總經 AI 短評")
 
-st.sidebar.markdown("---")
 if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
 
@@ -86,48 +85,49 @@ if fred_key:
         tab1, tab2 = st.tabs(["金融市場走勢 (yfinance)", "總體經濟趨勢 (FRED)"])
         
         with tab1:
-            market_choice = st.selectbox("選擇金融市場標的：", market_df.columns, key="market_select")
+            market_choice = st.selectbox("選擇金融市場標的：", market_df.columns)
             fig1 = px.line(market_df, y=market_choice, title=f"{market_choice} 近一年走勢")
             st.plotly_chart(fig1, use_container_width=True)
             
         with tab2:
-            macro_choice = st.selectbox("選擇總體經濟指標：", macro_df.columns, key="macro_select")
+            macro_choice = st.selectbox("選擇總體經濟指標：", macro_df.columns)
             fig2 = px.line(macro_df, y=macro_choice, title=f"{macro_choice} 近一年走勢")
             st.plotly_chart(fig2, use_container_width=True)
 
-        # 第三區塊：AI 總體經濟即時摘要
+        # 第三區塊：AI 總體經濟摘要按鈕與功能
         st.write("---")
-        st.subheader("🤖 AI 總體經濟即時短評")
+        st.subheader("🤖 AI 智能總經短評")
         
-        if st.button("✨ 產生 AI 總體經濟摘要", type="primary"):
+        if st.button("產生 AI 總體經濟摘要"):
             if not gemini_key:
-                st.warning("⚠️ 請先在側邊欄輸入您的 Gemini API Key 才能啟用 AI 摘要功能。")
+                st.warning("請先在左側側邊欄位輸入您的 Gemini API Key，或設定至 Secrets 中！")
             else:
-                with st.spinner("🧠 Gemini 正在分析最新總經數據，撰寫約 200 字專業短評中..."):
+                with st.spinner("正在呼叫 Gemini 2.5 模型分析最新經濟數據中..."):
                     try:
-                        genai.configure(api_key=gemini_key)
+                        # 初始化 Google GenAI Client
+                        client = genai.Client(api_key=gemini_key)
                         
-                        # 整理當前數據作為上下文
-                        context_prompt = f"""
-                        請根據以下最新抓取的美國總體經濟數據，撰寫一份約 200 字的專業總體經濟短評。
-                        內容需包含對目前通膨（CPI）、利率（聯邦基金利率與 10 年美債殖利率）以及就業市場（失業率）的綜合解讀，
-                        並點出這些數據可能對金融市場帶來的潛在影響與投資啟示：
-                        
-                        - CPI 物價指數: {latest_cpi:.1f}
-                        - 10年期美債殖利率: {latest_rate:.2f}% (較前日變動: {latest_rate - rate_prev:+.2f}%)
+                        # 準備傳遞給 AI 的即時數值上下文
+                        prompt = f"""
+                        你是一位專業的總體經濟學家。請依據以下最新抓取到的美國總經數據，撰寫一份大約 200 字以內的精煉總體經濟短評，分析當前的通膨、就業與利率形勢對市場可能帶來的影響：
+                        - 最新 CPI 物價指數: {latest_cpi:.1f}
+                        - 10年期美債殖利率: {latest_rate:.2f}%
                         - 美國失業率: {latest_unemp:.1f}%
                         - 聯邦基金利率: {latest_fed:.2f}%
                         """
                         
-                        # 呼叫 Gemini 模型
-                        model = genai.GenerativeModel('gemini-1.5-flash')
-                        response = model.generate_content(context_prompt)
+                        # 調用 gemini-2.5 模型（或對應的支援版本）
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=prompt,
+                        )
                         
-                        st.success("✅ AI 摘要生成完畢！")
-                        st.markdown(response.text)
+                        # 顯示結果
+                        st.success("分析完成！")
+                        st.info(response.text)
                         
-                    except Exception as ai_error:
-                        st.error(f"❌ AI 摘要生成失敗，請檢查 Gemini API Key 是否正確。錯誤訊息: {ai_error}")
+                    except Exception as ai_err:
+                        st.error(f"AI 摘要生成失敗，請確認 Gemini API Key 是否正確。錯誤訊息: {ai_err}")
 
     except Exception as e:
         st.error(f"數據讀取失敗，請確認 FRED API Key 是否正確。錯誤訊息: {e}")
