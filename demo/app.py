@@ -1,31 +1,3 @@
-# 1. 抓取 FRED 數據 (新增日本 10 年期國債殖利率)
-@st.cache_data(ttl=3600)
-def get_fred_data(api_key):
-    fred = Fred(api_key=api_key)
-    data = {
-        "CPI 物價指數": fred.get_series("CPIAUCSL"),
-        "10年期美債殖利率": fred.get_series("DGS10"),
-        "美國失業率": fred.get_series("UNRATE"),
-        "聯邦基金利率": fred.get_series("FEDFUNDS"),
-        "日本10年期國債殖利率": fred.get_series("IRLTLT01JPM156N")  # 新增
-    }
-    df = pd.DataFrame(data).ffill().tail(365)
-    return df
-
-# 2. 抓取 Market 數據 (新增黃金期貨 GC=F)
-@st.cache_data(ttl=600)
-def get_market_data():
-    tickers = {
-        "S&P 500": "^GSPC",
-        "台灣加權指數": "^TWII",
-        "布蘭特原油": "BZ=F",
-        "美元/台幣匯率": "TWD=X",
-        "黃金期貨": "GC=F"  # 新增
-    }
-    df = yf.download(list(tickers.values()), period="1y")["Close"]
-    df.rename(columns={v: k for k, v in tickers.items()}, inplace=True)
-    return df
-
 # 頁面渲染邏輯
 if fred_key:
     try:
