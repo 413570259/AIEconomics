@@ -28,10 +28,14 @@ def get_fred_data(api_key):
     data = {
         "CPI 物價指數": fred.get_series("CPIAUCSL"),
         "10年期美債殖利率": fred.get_series("DGS10"),
+        "2年期美債殖利率": fred.get_series("DGS2"),  # 新增：2年期美債殖利率
         "美國失業率": fred.get_series("UNRATE"),
         "聯邦基金利率": fred.get_series("FEDFUNDS")
     }
     df = pd.DataFrame(data).ffill().tail(365)
+    
+    # 計算 10Y - 2Y 殖利率利差
+    df["殖利率利差 (10Y-2Y)"] = df["10年期美債殖利率"] - df["2年期美債殖利率"]
     return df
 
 # 2. 抓取 Market 數據 (設快取 10 分鐘)
@@ -70,22 +74,40 @@ if fred_key:
         latest_fed = macro_df["聯邦基金利率"].dropna().iloc[-1]
         col4.metric("聯邦基金利率", f"{latest_fed:.2f}%")
 
-        # 第二區塊：互動式圖表
+        # 第二區塊：殖利率曲線利差狀態與警示燈號
+        st.write("---")
+        st.subheader("🚨 殖利率曲線倒掛監控 (10Y - 2Y 利差)")
+        
+        latest_spread = macro_df["殖利率利差 (10Y-2Y)"].dropna().iloc[-1]
+        
+        if latest_spread < 0:
+            st.warning(f"⚠️ **警示：發生殖利率曲線倒掛！** 目前 10Y - 2Y 利差為 **{latest_spread:.2f}%**（小於 0）。歷史經驗顯示這通常是經濟衰退的領先指標，請留意市場風險。")
+        else:
+            st.success(f"✅ **殖利率曲線正常**：目前 10Y - 2Y 利差為 **+{latest_spread:.2f}%**（大於 0）。")
+
+        # 第三區塊：互動式圖表
         st.write("---")
         st.subheader("📈 市場走勢與總體指標折線圖")
         
         tab1, tab2 = st.tabs(["金融市場走勢 (yfinance)", "總體經濟趨勢 (FRED)"])
         
         with tab1:
-            market_choice = st.selectbox("選擇金融市場標的：", market_df.columns)
+            market_choice = st.selectbox("選擇金融市場標的：", market_df.columns, key="market_select")
             fig1 = px.line(market_df, y=market_choice, title=f"{market_choice} 近一年走勢")
             st.plotly_chart(fig1, use_container_width=True)
             
         with tab2:
-            macro_choice = st.selectbox("選擇總體經濟指標：", macro_df.columns)
+            macro_choice = st.selectbox("選擇總體經濟指標：", macro_df.columns, key="macro_select")
             fig2 = px.line(macro_df, y=macro_choice, title=f"{macro_choice} 近一年走勢")
+            # 如果是利差，可以額外畫一條 0 軸參考線讓畫面更直覺
+            if macro_choice == "殖利率利差 (10Y-2Y)":
+                fig2.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="倒掛分界線 (0%)")
             st.plotly_chart(fig2, use_container_width=True)
 
+    except Exception as e:
+        st.error(f"數據讀取失敗，請確認 FRED API Key 是否正確。錯誤訊息: {e}")
+else:
+    st.info("👈 請在左側輸入您的 FRED API Key 以開啟儀表板。")
     except Exception as e:
         st.error(f"數據讀取失敗，請確認 FRED API Key 是否正確。錯誤訊息: {e}")
 else:
