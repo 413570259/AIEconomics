@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import yfinance as yf
 from fredapi import Fred
-from google import genai
+from google import genmini
 
 # 頁面基本配置
 st.set_page_config(page_title="總體經濟與金融即時儀表板", layout="wide")
