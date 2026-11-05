@@ -116,11 +116,12 @@ if fred_key:
                         - 聯邦基金利率: {latest_fed:.2f}%
                         """
                         
-                        # 調用 gemini-2.5 模型（或對應的支援版本）
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=prompt,
-                        )
+                        # 修改為 gemini-3.8-flash
+response = client.models.generate_content(
+    model='gemini-3.8-flash',
+    contents=prompt,
+)
+                    
                         
                         # 顯示結果
                         st.success("分析完成！")
