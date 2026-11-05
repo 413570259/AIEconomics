@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import yfinance as yf
 from fredapi import Fred
-import google.generativeai as genai  # 改用經典的寫法
+from google import genai  # 引入 Google GenAI SDK
 
 # 頁面基本配置
 st.set_page_config(page_title="總體經濟與金融即時儀表板", layout="wide")
@@ -102,10 +102,10 @@ if fred_key:
             if not gemini_key:
                 st.warning("請先在左側側邊欄位輸入您的 Gemini API Key，或設定至 Secrets 中！")
             else:
-                with st.spinner("正在呼叫 Gemini 模型分析最新經濟數據中..."):
+                with st.spinner("正在呼叫 Gemini 2.5 模型分析最新經濟數據中..."):
                     try:
-                        # 設定 Gemini API Key
-                        genai.configure(api_key=gemini_key)
+                        # 初始化 Google GenAI Client
+                        client = genai.Client(api_key=gemini_key)
                         
                         # 準備傳遞給 AI 的即時數值上下文
                         prompt = f"""
@@ -116,9 +116,11 @@ if fred_key:
                         - 聯邦基金利率: {latest_fed:.2f}%
                         """
                         
-                        # 使用 gemini-2.5-flash 或 gemini-1.5-flash 模型
-                        model = genai.GenerativeModel('gemini-2.5-flash')
-                        response = model.generate_content(prompt)
+                        # 調用 gemini-2.5 模型（或對應的支援版本）
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=prompt,
+                        )
                         
                         # 顯示結果
                         st.success("分析完成！")
