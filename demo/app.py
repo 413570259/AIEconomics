@@ -158,7 +158,7 @@ if fred_key:
                                     """
                                     
                                     # 使用 gemini-2.5-flash 或 gemini-3.8-flash (視你的 API 權限而定，此處採用穩定模型)
-                                    model = genai.GenerativeModel("gemini-2.5-flash")
+                                    model = genai.GenerativeModel("gemini-3.8-flash")
                                     response = model.generate_content(prompt)
                                     st.markdown(response.text)
                                 except Exception as e:
