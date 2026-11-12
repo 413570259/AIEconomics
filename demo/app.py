@@ -168,3 +168,7 @@ if fred_key:
                             st.warning("尚無新聞數據可供分析。")
                 else:
                     st.warning("👈 請在側邊欄輸入 Gemini API Key（或設定在 Secrets 中）以啟用 AI 文本情緒分析功能。")
+    except Exception as e:
+        st.error(f"數據讀取失敗，請確認 FRED API Key 是否正確。錯誤訊息: {e}")
+else:
+    st.info("👈 請在左側輸入您的 FRED API Key 以開啟儀表板。")
