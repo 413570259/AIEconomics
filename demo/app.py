@@ -11,7 +11,7 @@ from urllib.parse import quote  # 解決 URL 空白字元轉碼問題
 # 1. 頁面配置與側邊欄金鑰設定
 # ==========================================
 st.set_page_config(page_title="個股新聞輿論與 AI 走勢預測儀表板", layout="wide")
-st.title("📈 個股即時新聞舆論、基本面與 AI 未來走勢預測儀表板")
+st.title("📈 個股即時新聞輿論、基本面與 AI 未來走勢預測儀表板")
 
 st.sidebar.header("⚙️ 設定與金鑰")
 
