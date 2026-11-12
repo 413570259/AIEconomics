@@ -123,7 +123,7 @@ if fred_key:
             st.subheader("🎯 個股即時新聞與 AI 未來漲跌方向預測分析")
             
             # 使用者可以自由輸入想分析的股票名稱或代號
-            stock_keyword = st.text_input("🔍 輸入您關心的個股或關鍵字 (例如: 台積電、2330、Apple、NVDA):", value="台積電")
+            stock_keyword = st.text_input("🔍 輸入您關心的個股或關鍵字 (例如: 台積電、2330、Apple、NVDIA):", value="台積電")
             
             news_items = fetch_google_news(stock_keyword)
 
