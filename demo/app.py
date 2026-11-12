@@ -4,7 +4,7 @@ import plotly.express as px
 import yfinance as yf
 from fredapi import Fred
 import feedparser
-import google.generativeai as genai
+from google import genai
 from urllib.parse import quote  # 解決 URL 空白字元轉碼問題
 
 # ==========================================
