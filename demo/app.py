@@ -122,13 +122,10 @@ if fred_key:
         with tab3:
             st.subheader("📰 即時財經新聞與 LLM 鷹鴿派情緒分析")
             
-            # 💡 將你的這段說明以提示文字 (st.info 或 markdown) 呈現
-            st.info(
-                "💡 **使用提示**：下方輸入框中的 `Federal Reserve Inflation` 僅為初始預設值（Default Value）。"
-                "你可以自由輸入 `Taiwan Stock Market`、`TSMC` 或中文的 `聯準會 降息` 等關鍵字，系統會即時串接 Google News RSS 進行分析！"
-            )
+            # 👇 就是這一行！這裡讓使用者可以自由輸入自訂關鍵字（預設值為 "Federal Reserve Inflation"）
+            search_kw = st.text_input("🔍 輸入新聞關鍵字 (預設: Federal Reserve Inflation):", value="Federal Reserve Inflation")
             
-            search_kw = st.text_input("🔍 輸入新聞關鍵字:", value="Federal Reserve Inflation")
+            # 👇 這裡會將使用者輸入的關鍵字傳進去抓取 Google News RSS
             news_titles = fetch_google_news(search_kw)
 
             nlp_col1, nlp_col2 = st.columns([1, 1])
@@ -153,14 +150,10 @@ if fred_key:
                                              f"請以繁體中文輸出結構化報告：\n" \
                                              f"1. 整體市場情緒分數 (0~100)\n" \
                                              f"2. 貨幣政策立場判定 (鷹派/鴿派/中立)\n" \
-                                             f"3. 重點分析與逐條評分表格 (Markdown Format)"
+                                             f"3.重點分析與逐條評分表格 (Markdown Format)"
                                     
-                                    # 調用 Gemini 模型
-                                    client = genai.Client(api_key=gemini_key)
-                                    response = client.models.generate_content(
-                                        model='gemini-2.5-flash', # 依你的 SDK 版本調整
-                                        contents=prompt,
-                                    )
+                                    model = genai.GenerativeModel("gemini-3.5-flash")
+                                    response = model.generate_content(prompt)
                                     st.markdown(response.text)
                                 except Exception as e:
                                     st.error(f"AI 分析時發生錯誤: {e}")
