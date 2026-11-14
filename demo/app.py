@@ -29,7 +29,7 @@ else:
 # 1.2 智慧股票搜尋輸入框
 st.sidebar.write("---")
 st.sidebar.header("🔍 標的選擇")
-user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 台積電, 2330, AAPL, NVDA):", value="全景軟體").strip()
+user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 全景軟體, 8272, 台積電, 2330, AAPL):", value="全景軟體").strip()
 
 def resolve_ticker(query):
     tw_mapping = {
@@ -51,7 +51,7 @@ if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
 
 # ==========================================
-# 2. 數據抓取與智慧統整函式
+# 2. 數據抓取與高效快取統整函式
 # ==========================================
 @st.cache_data(ttl=600)
 def get_stock_data(ticker_symbol):
@@ -77,9 +77,10 @@ def fetch_google_news(keyword):
     safe_keyword = quote(keyword)
     url = f"https://news.google.com/rss/search?q={safe_keyword}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant"
     feed = feedparser.parse(url)
+    # 保留完整 10 筆資料以維持論述說服力，並透過快取加速讀取
     return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
-# 利用 Gemini 將任意公司的介紹或財報資訊自動統整為「產業概況、產品組合、營運展望」
+# 利用 Gemini 進行結構化統整，拉長 TTL 快取避免重複等待
 @st.cache_data(ttl=86400)
 def generate_structured_summary(company_name, raw_summary):
     try:
@@ -306,7 +307,6 @@ if stock_ticker:
                                         4. **後續操作風險與觀察重點**：(提醒投資人應注意的總經或產業風險)
                                         """
                                         
-                                        # 已全面更新為 gemini-3.8-flash
                                         model = genai.GenerativeModel("gemini-3.8-flash")
                                         response = model.generate_content(prompt)
                                         st.markdown(response.text)
