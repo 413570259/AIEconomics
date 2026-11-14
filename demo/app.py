@@ -119,8 +119,8 @@ sector_zh_map = {
 
 industry_zh_map = {
     "Semiconductors": "半導體業",
-    "Software—Infrastructure": "軟體基礎設施業",
-    "Software—Application": "應用軟體業",
+    "Software - Infrastructure": "軟體基礎設施業",
+    "Software - Application": "應用軟體業",
     "Security & Protection": "資訊安全與防護業",
     "Consumer Electronics": "消費性電子產品業",
     "Internet Content & Information": "網路內容與資訊服務業"
@@ -137,16 +137,16 @@ name_zh_map = {
 
 # 全景軟體（8272）專屬精準結構化內容（對應你提供的報告內容）
 pan_view_custom_summary = """
-**1. 產業概況：**
+**產業概況：**
 全景軟體成立於1998年，總部位於新竹科學園區，隸屬於緯創集團，為國內專業資訊安全軟體領導廠商。專注於「網路安全」與「人事物的識別認證」領域，深耕 PKI 與密碼學技術，所有解決方案均為自主研發。已取得 ISO 27001、FIDO、OATH 及資安院 ZTA 三階段驗證等專業認證，並於2024年10月23日轉上櫃掛牌（股票代號8272）。
 
-**2. 產品組合：**
+**產品組合：**
 * **安全認證與零信任架構（ZTA）：** 提供 CGTrust、IDExpert、MOTP、CGFIDO、MICS 與 ServiSign，完備身分鑑別與信任推斷需求。
 * **科技金融資安與 PKI：** 提供金融/政府憑證、CA/RA 管理系統、SS簽章加密、CodeSign 與 HSM 硬體加密器（市佔率高）。
 * **數位轉型應用與 AI 辨識：** 結合 AI-OCR 與影像處理，提供 FastSIGN 快速簽、手寫簽名、智慧證件辨識與 DIMS 文件管理系統。
 * **IoT 物聯網安全：** 提供 KMS、CLM、Matter 裝置安全整合方案及智慧電網資安模組。
 
-**3. 營運展望：**
+**營運展望：**
 * 聚焦地端與 SaaS 雙軌模式（如 IDExpert Cloud），降低客戶建置成本並累積經常性收入。
 * 取得「後量子多重簽章」發明專利，深化軟體供應鏈安全與 PQC 領域。
 * 與日本 Cybertrust Japan 合作參展 CEATEC，積極拓展國際物聯網憑證與自動部署市場。
@@ -189,7 +189,7 @@ if stock_ticker:
             else:
                 twii_str = "無資料"
                 twii_delta = "無資料"
-            col_idx.metric("台灣加權指數", twii_str, twii_delta)
+            col_idx.metric("台股加權指數", twii_str, twii_delta)
 
             col1.metric("收盤價", f"{latest_close:.2f}", f"{price_change:+.2f} ({pct_change:+.2f}%)")
             col2.metric("本益比", f"{pe_ratio:.2f}" if pe_ratio is not None else "無資料")
