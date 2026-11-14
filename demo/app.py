@@ -29,7 +29,7 @@ else:
 # 1.2 智慧股票搜尋輸入框
 st.sidebar.write("---")
 st.sidebar.header("🔍 標的選擇")
-user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 全景軟體, 8272, 台積電, 2330, AAPL):", value="全景軟體").strip()
+user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 台積電, 2330, AAPL, NVDA):", value="全景軟體").strip()
 
 def resolve_ticker(query):
     tw_mapping = {
