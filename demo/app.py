@@ -31,7 +31,7 @@ else:
 st.sidebar.write("---")
 st.sidebar.header("🔍 標的選擇")
 default_ticker = "2330.TW"
-stock_ticker = st.sidebar.text_input("輸入股票代號 (例: 2330.TW, AAPL, NVDA):", value=default_ticker).strip().upper()
+stock_ticker = st.sidebar.text_input("輸入股票代號 (例: 2330.TW, AAPL, NVIDIA):", value=default_ticker).strip().upper()
 
 if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
