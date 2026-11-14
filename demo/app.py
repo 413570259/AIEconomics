@@ -83,7 +83,7 @@ def fetch_google_news(keyword):
 @st.cache_data(ttl=86400)
 def generate_structured_summary(company_name, raw_summary):
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-3.8-flash")
         prompt = f"""
         你是一位專業的證券與產業分析師。請針對公司「{company_name}」，根據以下參考資訊，以繁體中文撰寫一份精簡、結構化的公司簡介。
         必須嚴格包含以下三個段落（使用 Markdown 條列或小標題）：
