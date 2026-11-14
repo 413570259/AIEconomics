@@ -143,4 +143,35 @@ if stock_ticker:
             st.subheader("📊 市場大盤與個股即時指標")
             col_idx, col1, col2, col3, col4, col5 = st.columns(6)
             
-            col_idx.metric("台灣加權指數", f"{twii_latest:,.2f}" if
+            if twii_latest > 0:
+                twii_str = f"{twii_latest:,.2f}"
+                twii_delta = f"{twii_change:+.2f} ({twii_pct:+.2f}%)"
+            else:
+                twii_str = "無資料"
+                twii_delta = "無資料"
+            col_idx.metric("台灣加權指數", twii_str, twii_delta)
+
+            col1.metric("收盤價", f"{latest_close:.2f}", f"{price_change:+.2f} ({pct_change:+.2f}%)")
+            col2.metric("本益比", f"{pe_ratio:.2f}" if pe_ratio is not None else "無資料")
+            col3.metric("52週最高", f"{high_52w:.2f}" if high_52w is not None else "無資料")
+            col4.metric("52週最低", f"{low_52w:.2f}" if low_52w is not None else "無資料")
+            col5.metric("市值", f"{market_cap / 1e8:,.2f} 億" if market_cap else "無資料")
+
+            st.write("---")
+
+            # 第二區塊：三大功能分頁
+            tab1, tab2, tab3 = st.tabs([
+                "📉 個股技術分析 (K線與均線)", 
+                "📋 公司基本面與嚴格財務摘要", 
+                "🎯 即時新聞與 AI 走勢預測"
+            ])
+            
+            # 頁籤 1: 技術分析
+            with tab1:
+                st.subheader(f"{company_name} ({stock_ticker}) 近一年技術走勢與均線")
+                
+                df['MA5'] = df['Close'].rolling(window=5).mean()
+                df['MA20'] = df['Close'].rolling(window=20).mean()
+                df['MA60'] = df['Close'].rolling(window=60).mean()
+                df['MA120'] = df['Close'].rolling(window=120).mean()
+                df['MA240'] = df['Close'].rolling(window=240).mean()
