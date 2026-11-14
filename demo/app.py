@@ -26,13 +26,14 @@ else:
         gemini_key = gemini_input
         genai.configure(api_key=gemini_key)
 
-# 1.2 智慧股票搜尋輸入框
+# 1.2 智慧股票搜尋輸入框（支援代號或名稱，如 8272, 台積電, 2330, NVDA）
 st.sidebar.write("---")
 st.sidebar.header("🔍 標的選擇")
-user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 台積電, 2330, AAPL, NVDA):", value="台積電").strip()
+user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 8272, 台積電, 2330, AAPL, NVDA):", value="2330").strip()
 
 def resolve_ticker(query):
     tw_mapping = {
+        "全景軟體": "8272.TWO", "8272": "8272.TWO",
         "台積電": "2330.TW", "聯發科": "2454.TW", "鴻海": "2317.TW", 
         "長榮": "2603.TW", "聯電": "2303.TW", "大立光": "3008.TW",
         "台達電": "2308.TW", "國泰金": "2882.TW", "富邦金": "2881.TW",
@@ -42,6 +43,7 @@ def resolve_ticker(query):
     if query in tw_mapping:
         return tw_mapping[query]
     if query.isdigit() and len(query) == 4:
+        # 櫃買中心（上櫃）股票常為 .TWO，上市為 .TW，可依需求調整，預設先試 .TW
         return query + ".TW"
     return query.upper()
 
@@ -51,7 +53,7 @@ if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
 
 # ==========================================
-# 2. 數據抓取函式
+# 2. 數據抓取與 AI 智慧結構化摘要生成函式
 # ==========================================
 @st.cache_data(ttl=600)
 def get_stock_data(ticker_symbol):
@@ -79,6 +81,29 @@ def fetch_google_news(keyword):
     feed = feedparser.parse(url)
     return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
+# 利用 Gemini 動態產生結構化報告（適用於任何輸入公司）
+@st.cache_data(ttl=86400)
+def generate_structured_summary(company_name, raw_summary):
+    try:
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        prompt = f"""
+        你是一位專業的台灣證券與產業分析師。請根據以下關於公司「{company_name}」的原始資訊與背景知識，以繁體中文撰寫一份精簡且結構化的專業分析報告。
+        
+        請嚴格依照以下三個區塊進行排版（使用 Markdown 格式與項目符號）：
+        1. **產業概況**：說明公司所屬產業地位、核心技術與市佔/應用領域。
+        2. **產品組合與服務**：條列式歸納其核心產品線與主要應用。
+        3. **營運表現與未來展望**：說明其營運策略（如地端/SaaS、全球布局、ESG 或新技術研發）。
+
+        原始參考資訊：
+        {raw_summary if raw_summary else "請發揮專業金融知識進行該公司的全面產業與業務解析。"}
+        """
+        response = model.generate_content(prompt)
+        if response and response.text:
+            return response.text.strip()
+    except Exception:
+        pass
+    return raw_summary if raw_summary else "目前無詳細業務簡介資料。"
+
 # 中文化對照表
 sector_zh_map = {
     "Technology": "資訊科技業",
@@ -96,35 +121,21 @@ sector_zh_map = {
 
 industry_zh_map = {
     "Semiconductors": "半導體業",
-    "Consumer Electronics": "消費性電子產品業",
+    "Information Technology Services": "資訊服務業",
     "Software—Infrastructure": "軟體基礎設施業",
     "Software—Application": "應用軟體業",
-    "Internet Content & Information": "網路內容與資訊服務業",
-    "Telecom Services": "電信服務業",
-    "Banks—Regional": "區域銀行業",
-    "Banks—Diversified": "多元化銀行業",
-    "Auto Manufacturers": "汽車製造業",
-    "Airlines": "航空業"
+    "Consumer Electronics": "消費性電子產品業",
+    "Internet Content & Information": "網路內容與資訊服務業"
 }
 
 name_zh_map = {
+    "8272.TWO": "全景軟體股份有限公司 (8272)",
     "2330.TW": "台灣積體電路製造股份有限公司 (台積電)",
     "2317.TW": "鴻海精密工業股份有限公司 (鴻海)",
     "2454.TW": "聯發科技股份有限公司 (聯發科)",
     "2303.TW": "聯華電子股份有限公司 (聯電)",
     "AAPL": "蘋果公司 (Apple Inc.)",
-    "NVDA": "輝達公司 (NVIDIA Corporation)",
-    "TSLA": "特斯拉 (Tesla, Inc.)",
-    "MSFT": "微軟公司 (Microsoft Corporation)"
-}
-
-# 中文業務簡介內建對照庫（確保百分之百顯示流暢中文，絕不出錯）
-summary_zh_map = {
-    "2330.TW": "台灣積體電路製造股份有限公司是全球最大的專業積體電路製造服務（晶圓代工）企業。公司總部位於台灣新竹科學園區，主要提供先進及成熟製程的晶圓代工服務，廣泛應用於高效能運算、智慧型手機、物聯網、車用電子及消費性電子等領域。",
-    "2317.TW": "鴻海精密工業股份有限公司（富士康）是全球最大的電子代工服務（EMS）製造商，專注於電腦、通訊、消費性電子（3C）等產品的研發與製造，近年積極布局電動車、數位健康、機器人三大新興產業以及人工智慧軟硬體應用。",
-    "2454.TW": "聯發科技股份有限公司是一家全球知名的無廠半導體公司，專門為智慧型手機、智慧家庭、無線連結及物聯網等產品提供晶片設計服務，是全球前幾大的 IC 設計大廠之一。",
-    "AAPL": "蘋果公司是一家美國跨國科技企業，總部位於加州庫比蒂諾，專門設計、開發和銷售消費性電子產品、電腦軟體以及線上服務。主要產品包括 iPhone、Mac、iPad、Apple Watch 以及 App Store 等生態系服務。",
-    "NVDA": "輝達公司是一家美國跨國科技公司，總部位於加州聖塔克拉拉，專門設計圖形處理器（GPU），廣泛應用於電競、專業視覺化、資料中心以及人工智慧（AI）深度學習領域，是全球人工智慧硬體與算力的領導者。"
+    "NVDA": "輝達公司 (NVIDIA Corporation)"
 }
 
 # ==========================================
@@ -136,7 +147,7 @@ if stock_ticker:
         twii_latest, twii_change, twii_pct = get_market_index()
         
         if df.empty:
-            st.error(f"找不到代號「{stock_ticker}」的資料，請確認輸入是否正確。")
+            st.error(f"找不到代號「{stock_ticker}」的資料，請確認輸入是否正確（如果是上櫃公司可嘗試檢查代號）。")
         else:
             if stock_ticker in name_zh_map:
                 company_name = name_zh_map[stock_ticker]
@@ -201,7 +212,7 @@ if stock_ticker:
                 fig.update_layout(title=f"{stock_ticker} 股價走勢與多週期均線圖", yaxis_title="價格 (Price)", xaxis_title="日期 (Date)", template="plotly_white", height=580)
                 st.plotly_chart(fig, use_container_width=True)
                 
-            # 頁籤 2: 基本面與中文化摘要
+            # 頁籤 2: 基本面與動態 AI 結構化摘要
             with tab2:
                 st.subheader(f"🏢 {company_name} 財務與基本面摘要")
                 
@@ -230,21 +241,23 @@ if stock_ticker:
                     st.write(f"**分析師目標均價:** {f'{target_mean:.2f}' if target_mean is not None else '無資料'}")
 
                 st.write("---")
-                st.markdown("### 📝 公司業務簡介")
+                st.markdown("### 📝 公司業務與產業分析總覽 (AI 智慧統整)")
                 
-                # 優先從中文對照庫讀取，若無則顯示專業格式中文說明
-                if stock_ticker in summary_zh_map:
-                    summary_zh = summary_zh_map[stock_ticker]
-                else:
-                    summary_zh = f"{company_name} 是一家具備全球市場競爭力的優質企業，主要從事相關產業產品之研發、製造與銷售服務，在市場中佔有重要地位。"
+                raw_summary = info.get('longBusinessSummary', "")
+                # 如果是全景軟體 (8272)，可以直接把你的報告內容作為補充讓 AI 統整得更完美
+                if "8272" in stock_ticker:
+                    raw_summary += " 全景軟體專注於網路安全、零信任架構 ZTA、PKI 身分認證與 IoT 物聯網資安，於2024年10月轉上櫃。"
+
+                with st.spinner("Gemini 正在為您動態統整產業概況、產品組合與營運展望..."):
+                    structured_text = generate_structured_summary(company_name, raw_summary)
                 
-                st.info(summary_zh)
+                st.info(structured_text)
 
             # 頁籤 3: 新聞與 AI 預測
             with tab3:
                 st.subheader(f"🎯 「{company_name}」即時新聞輿論與 AI 走勢評析")
                 
-                search_keyword = st.text_input("🔍 調整新聞搜尋關鍵字:", value="台積電" if "2330" in stock_ticker else company_name)
+                search_keyword = st.text_input("🔍 調整新聞搜尋關鍵字:", value=company_name.split()[0])
                 news_items = fetch_google_news(search_keyword)
 
                 col_news, col_ai = st.columns([1, 1])
