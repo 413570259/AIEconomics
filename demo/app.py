@@ -32,7 +32,7 @@ st.sidebar.header("🔍 標的選擇")
 user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 台積電, 2330, AAPL, NVDA):", value="台積電").strip()
 
 def resolve_ticker(query):
-    # 常見台股中文對照表
+    # 常見台股中文對照表（確保輸入名稱或正確代號都能精準對應）
     tw_mapping = {
         "台積電": "2330.TW", "聯發科": "2454.TW", "鴻海": "2317.TW", 
         "長榮": "2603.TW", "聯電": "2303.TW", "大立光": "3008.TW",
@@ -42,10 +42,8 @@ def resolve_ticker(query):
     }
     if query in tw_mapping:
         return tw_mapping[query]
-    # 若輸入 4 位數純數字，自動補上 .TW
     if query.isdigit() and len(query) == 4:
         return query + ".TW"
-    # 其他情況轉大寫（美股代號）
     return query.upper()
 
 stock_ticker = resolve_ticker(user_input)
@@ -65,7 +63,6 @@ def get_stock_data(ticker_symbol):
 
 @st.cache_data(ttl=600)
 def get_market_index():
-    # 抓取台灣加權指數 (^TWII)
     twii = yf.Ticker("^TWII")
     df = twii.history(period="5d")
     if not df.empty:
@@ -83,6 +80,29 @@ def fetch_google_news(keyword):
     feed = feedparser.parse(url)
     return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
+# 中文化輔助轉換字典 (將 yfinance 的英文產業轉為中文)
+sector_zh_map = {
+    "Technology": "資訊科技業",
+    "Financial Services": "金融服務業",
+    "Healthcare": "醫療保健業",
+    "Consumer Cyclical": "非必需消費品業",
+    "Consumer Defensive": "必需消費品業",
+    "Communication Services": "通訊服務業",
+    "Industrials": "工業",
+    "Basic Materials": "基礎材料業",
+    "Energy": "能源業",
+    "Utilities": "公用事業",
+    "Real Estate": "房地產業"
+}
+
+# 常用台股公司名稱中文強制對照
+name_zh_map = {
+    "2330.TW": "台灣積體電路製造股份有限公司 (台積電)",
+    "2317.TW": "鴻海精密工業股份有限公司 (鴻海)",
+    "2454.TW": "聯發科技股份有限公司 (聯發科)",
+    "2303.TW": "聯華電子股份有限公司 (聯電)"
+}
+
 # ==========================================
 # 3. 頁面渲染邏輯
 # ==========================================
@@ -94,7 +114,12 @@ if stock_ticker:
         if df.empty:
             st.error(f"找不到代號「{stock_ticker}」的資料，請確認輸入是否正確。")
         else:
-            company_name = info.get("longName", stock_ticker)
+            # 優先使用自訂中文名稱，若無則用 yfinance 的名稱
+            if stock_ticker in name_zh_map:
+                company_name = name_zh_map[stock_ticker]
+            else:
+                company_name = info.get("longName", stock_ticker)
+
             latest_close = df["Close"].iloc[-1]
             prev_close = df["Close"].iloc[-2]
             price_change = latest_close - prev_close
@@ -110,7 +135,7 @@ if stock_ticker:
             col_idx, col1, col2, col3, col4, col5 = st.columns(6)
             
             col_idx.metric("台灣加權指數", f"{twii_latest:,.2f}" if twii_latest else "無資料", f"{twii_change:+.2f} ({twii_pct:+.2f}%)" if twii_latest else "無資料")
-            col1.metric(f"{company_name} 收盤價", f"{latest_close:.2f}", f"{price_change:+.2f} ({pct_change:+.2f}%)")
+            col1.metric("收盤價", f"{latest_close:.2f}", f"{price_change:+.2f} ({pct_change:+.2f}%)")
             col2.metric("本益比 (P/E)", f"{pe_ratio:.2f}" if pe_ratio is not None else "無資料")
             col3.metric("52週最高", f"{high_52w:.2f}" if high_52w is not None else "無資料")
             col4.metric("52週最低", f"{low_52w:.2f}" if low_52w is not None else "無資料")
@@ -125,11 +150,10 @@ if stock_ticker:
                 "🎯 即時新聞與 AI 走勢預測"
             ])
             
-            # 頁籤 1: 技術分析 (K線 + 5條核心均線)
+            # 頁籤 1: 技術分析
             with tab1:
                 st.subheader(f"{company_name} ({stock_ticker}) 近一年技術走勢與均線")
                 
-                # 計算各期均線：週線(MA5)、月線(MA20)、季線(MA60)、半年線(MA120)、年線(MA240)
                 df['MA5'] = df['Close'].rolling(window=5).mean()
                 df['MA20'] = df['Close'].rolling(window=20).mean()
                 df['MA60'] = df['Close'].rolling(window=60).mean()
@@ -137,38 +161,24 @@ if stock_ticker:
                 df['MA240'] = df['Close'].rolling(window=240).mean()
 
                 fig = go.Figure()
-                
-                # Candlestick K線圖
-                fig.add_trace(go.Candlestick(
-                    x=df.index,
-                    open=df['Open'], high=df['High'],
-                    low=df['Low'], close=df['Close'],
-                    name="K線"
-                ))
-                
-                # 均線配置
+                fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="K線"))
                 fig.add_trace(go.Scatter(x=df.index, y=df['MA5'], line=dict(color='#ff7f0e', width=1), name="週線 (MA5)"))
                 fig.add_trace(go.Scatter(x=df.index, y=df['MA20'], line=dict(color='#2ca02c', width=1.2), name="月線 (MA20)"))
                 fig.add_trace(go.Scatter(x=df.index, y=df['MA60'], line=dict(color='#d62728', width=1.5), name="季線 (MA60)"))
                 fig.add_trace(go.Scatter(x=df.index, y=df['MA120'], line=dict(color='#9467bd', width=1.5), name="半年線 (MA120)"))
                 fig.add_trace(go.Scatter(x=df.index, y=df['MA240'], line=dict(color='#8c564b', width=2), name="年線 (MA240)"))
                 
-                fig.update_layout(
-                    title=f"{stock_ticker} 股價走勢與多週期均線圖",
-                    yaxis_title="價格 (Price)",
-                    xaxis_title="日期 (Date)",
-                    template="plotly_white",
-                    height=580
-                )
+                fig.update_layout(title=f"{stock_ticker} 股價走勢與多週期均線圖", yaxis_title="價格 (Price)", xaxis_title="日期 (Date)", template="plotly_white", height=580)
                 st.plotly_chart(fig, use_container_width=True)
                 
-            # 頁籤 2: 基本面與嚴格財務摘要
+            # 頁籤 2: 基本面與中文化財務摘要
             with tab2:
                 st.subheader(f"🏢 {company_name} 嚴格財務與基本面摘要")
                 
-                sector = info.get('sector', None)
-                industry = info.get('industry', None)
-                country = info.get('country', None)
+                raw_sector = info.get('sector', None)
+                sector = sector_zh_map.get(raw_sector, raw_sector) if raw_sector else "無資料"
+                industry = info.get('industry', "無資料")
+                country = "台灣" if info.get('country') == "Taiwan" else info.get('country', "無資料")
                 employees = info.get('fullTimeEmployees', None)
                 eps = info.get('trailingEps', None)
                 dividend_yield = info.get('dividendYield', None)
@@ -176,9 +186,9 @@ if stock_ticker:
 
                 col_info1, col_info2 = st.columns(2)
                 with col_info1:
-                    st.write(f"**產業類別 (Sector):** {sector if sector else '無資料'}")
-                    st.write(f"**次產業 (Industry):** {industry if industry else '無資料'}")
-                    st.write(f"**國家/地區 (Country):** {country if country else '無資料'}")
+                    st.write(f"**產業類別 (Sector):** {sector}")
+                    st.write(f"**次產業 (Industry):** {industry}")
+                    st.write(f"**國家/地區 (Country):** {country}")
                     st.write(f"**員工人數:** {f'{employees:,} 人' if employees else '無資料'}")
                 
                 with col_info2:
@@ -198,7 +208,7 @@ if stock_ticker:
             with tab3:
                 st.subheader(f"🎯 「{company_name}」即時新聞輿論與 AI 走勢評析")
                 
-                search_keyword = st.text_input("🔍 調整新聞搜尋關鍵字:", value=company_name if company_name else stock_ticker)
+                search_keyword = st.text_input("🔍 調整新聞搜尋關鍵字:", value="台積電" if "2330" in stock_ticker else company_name)
                 news_items = fetch_google_news(search_keyword)
 
                 col_news, col_ai = st.columns([1, 1])
@@ -214,9 +224,9 @@ if stock_ticker:
                 with col_ai:
                     st.markdown(f"### 🤖 Gemini AI 智慧走勢預測與多空解析")
                     if gemini_key:
-                        if st.button(f"🚀 開始分析 {company_name} 未來走勢", type="primary"):
+                        if st.button(f"🚀 開始分析未來走勢", type="primary"):
                             if news_items:
-                                with st.spinner(f"Gemini 正在剖析 {company_name} 的最新新聞與市場情緒中..."):
+                                with st.spinner(f"Gemini 正在剖析最新新聞與市場情緒中..."):
                                     try:
                                         news_text = "\n".join([f"- {item['title']}" for item in news_items])
                                         prompt = f"""
@@ -239,7 +249,7 @@ if stock_ticker:
                             else:
                                 st.warning("尚無新聞數據可供分析。")
                     else:
-                        st.warning("👈 請在左側輸入 Gemini API Key 以啟用 AI 預測功能。")
+                        st.warning("👈 請在側邊欄輸入 Gemini API Key 以啟用 AI 預測功能。")
 
     except Exception as e:
         st.error(f"無法讀取該股票資料，請檢查代號或名稱是否正確。錯誤訊息: {e}")
