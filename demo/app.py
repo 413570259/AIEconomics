@@ -251,7 +251,7 @@ if stock_ticker:
                     st.write(f"**員工人數:** {f'{employees:,} 人' if employees else '無資料'}")
                 
                 with col_info2:
-                    st.write(f"**每股盈餘 (EPS):** {f'{eps:.2f}' if eps is not None else '無資料'}")
+                    st.write(f"**每股盈餘 (EPS):** {f'{eps:.2f}元' if eps is not None else '無資料'}")
                     st.write(f"**股利殖利率:** {f'{dividend_yield * 100:.2f}%' if dividend_yield else '無資料'}")
                     st.write(f"**分析師目標均價:** {f'{target_mean:.2f}' if target_mean is not None else '無資料'}")
 
