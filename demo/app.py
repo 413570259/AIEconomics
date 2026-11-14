@@ -135,22 +135,22 @@ name_zh_map = {
     "NVDA": "輝達公司 (NVIDIA Corporation)"
 }
 
-# 全景軟體（8272）專屬精準結構化內容（對應你提供的報告內容）
+# 全景軟體（8272）專屬精準結構化內容
 pan_view_custom_summary = """
 **產業概況：**
 全景軟體成立於1998年，總部位於新竹科學園區，隸屬於緯創集團，為國內專業資訊安全軟體領導廠商。專注於「網路安全」與「人事物的識別認證」領域，深耕 PKI 與密碼學技術，所有解決方案均為自主研發。已取得 ISO 27001、FIDO、OATH 及資安院 ZTA 三階段驗證等專業認證，並於2024年10月23日轉上櫃掛牌（股票代號8272）。
 
 **產品組合：**
-* **安全認證與零信任架構（ZTA）：** 提供 CGTrust、IDExpert、MOTP、CGFIDO、MICS 與 ServiSign，完備身分鑑別與信任推斷需求。
-* **科技金融資安與 PKI：** 提供金融/政府憑證、CA/RA 管理系統、SS簽章加密、CodeSign 與 HSM 硬體加密器（市佔率高）。
-* **數位轉型應用與 AI 辨識：** 結合 AI-OCR 與影像處理，提供 FastSIGN 快速簽、手寫簽名、智慧證件辨識與 DIMS 文件管理系統。
-* **IoT 物聯網安全：** 提供 KMS、CLM、Matter 裝置安全整合方案及智慧電網資安模組。
+- **安全認證與零信任架構（ZTA）：** 提供 CGTrust、IDExpert、MOTP、CGFIDO、MICS 與 ServiSign，完備身分鑑別與信任推斷需求。
+- **科技金融資安與 PKI：** 提供金融/政府憑證、CA/RA 管理系統、SS簽章加密、CodeSign 與 HSM 硬體加密器（市佔率高）。
+- **數位轉型應用與 AI 辨識：** 結合 AI-OCR 與影像處理，提供 FastSIGN 快速簽、手寫簽名、智慧證件辨識與 DIMS 文件管理系統。
+- **IoT 物聯網安全：** 提供 KMS、CLM、Matter 裝置安全整合方案及智慧電網資安模組。
 
 **營運展望：**
-* 聚焦地端與 SaaS 雙軌模式（如 IDExpert Cloud），降低客戶建置成本並累積經常性收入。
-* 取得「後量子多重簽章」發明專利，深化軟體供應鏈安全與 PQC 領域。
-* 與日本 Cybertrust Japan 合作參展 CEATEC，積極拓展國際物聯網憑證與自動部署市場。
-* 以電子簽署推動無紙化減碳落實 ESG，並持續深化企業與政府數位信任網。
+- 聚焦地端與 SaaS 雙軌模式（如 IDExpert Cloud），降低客戶建置成本並累積經常性收入。
+- 取得「後量子多重簽章」發明專利，深化軟體供應鏈安全與 PQC 領域。
+- 與日本 Cybertrust Japan 合作參展 CEATEC，積極拓展國際物聯網憑證與自動部署市場。
+- 以電子簽署推動無紙化減碳落實 ESG，並持續深化企業與政府數位信任網。
 """
 
 # ==========================================
@@ -258,7 +258,6 @@ if stock_ticker:
                 st.write("---")
                 st.markdown("### 📝 公司業務概況與營運展望統整")
                 
-                # 若查詢全景軟體（8272），直接呈現專屬精準內容；其他公司則由 AI 自動統整
                 if "8272" in stock_ticker or "全景軟體" in user_input:
                     st.info(pan_view_custom_summary)
                 else:
@@ -307,7 +306,8 @@ if stock_ticker:
                                         4. **後續操作風險與觀察重點**：(提醒投資人應注意的總經或產業風險)
                                         """
                                         
-                                        model = genai.GenerativeModel("gemini-2.0-flash")
+                                        # 已全面更新為 gemini-3.8-flash
+                                        model = genai.GenerativeModel("gemini-3.8-flash")
                                         response = model.generate_content(prompt)
                                         st.markdown(response.text)
                                     except Exception as e:
