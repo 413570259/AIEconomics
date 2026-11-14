@@ -10,7 +10,7 @@ from urllib.parse import quote
 # 1. 頁面配置與側邊欄設定
 # ==========================================
 st.set_page_config(page_title="個股深度分析與 AI 預測儀表板", layout="wide")
-st.title("📈 台美股即時行情、技術均線與 AI 智慧輿論解讀儀表板")
+st.title("📈 台美股即時行情、技術均線與 AI 智慧輿論解讀")
 
 st.sidebar.header("⚙️ 設定與金鑰")
 
@@ -51,7 +51,7 @@ if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
 
 # ==========================================
-# 2. 數據抓取與 AI 翻譯函式
+# 2. 數據抓取與強制中文化翻譯函式
 # ==========================================
 @st.cache_data(ttl=600)
 def get_stock_data(ticker_symbol):
@@ -79,17 +79,24 @@ def fetch_google_news(keyword):
     feed = feedparser.parse(url)
     return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
+# 強制加快取的 Gemini 翻譯函式，確保業務簡介 100% 變中文
+@st.cache_data(ttl=86400)
 def translate_summary_to_zh(english_summary):
-    if not gemini_key or not english_summary:
-        return english_summary
+    if not english_summary:
+        return "無資料"
     try:
+        # 建立暫時的 model 進行翻譯
         model = genai.GenerativeModel("gemini-2.0-flash")
-        prompt = f"請將以下英文的公司業務簡介翻譯成通順、專業的繁體中文，只需回傳翻譯結果即可：\n\n{english_summary}"
+        prompt = f"請將以下英文的公司業務簡介精準翻譯成通順、專業的繁體中文，不需要額外說明，只需回傳翻譯後的中文內容即可：\n\n{english_summary}"
         response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception:
-        return english_summary
+        if response and response.text:
+            return response.text.strip()
+    except Exception as e:
+        # 如果 API 未設定或失敗，退回原文並附帶提示
+        return f"(AI 翻譯暫時無法使用，顯示英文原文): {english_summary}"
+    return english_summary
 
+# 產業類別中文化對照表
 sector_zh_map = {
     "Technology": "資訊科技業",
     "Financial Services": "金融服務業",
@@ -102,6 +109,20 @@ sector_zh_map = {
     "Energy": "能源業",
     "Utilities": "公用事業",
     "Real Estate": "房地產業"
+}
+
+# 次產業中文化對照表 (確保常見英文次產業變中文)
+industry_zh_map = {
+    "Semiconductors": "半導體業",
+    "Consumer Electronics": "消費性電子產品業",
+    "Software—Infrastructure": "軟體基礎設施業",
+    "Software—Application": "應用軟體業",
+    "Internet Content & Information": "網路內容與資訊服務業",
+    "Telecom Services": "電信服務業",
+    "Banks—Regional": "區域銀行業",
+    "Banks—Diversified": "多元化銀行業",
+    "Auto Manufacturers": "汽車製造業",
+    "Airlines": "航空業"
 }
 
 name_zh_map = {
@@ -185,13 +206,16 @@ if stock_ticker:
                 fig.update_layout(title=f"{stock_ticker} 股價走勢與多週期均線圖", yaxis_title="價格 (Price)", xaxis_title="日期 (Date)", template="plotly_white", height=580)
                 st.plotly_chart(fig, use_container_width=True)
                 
-            # 頁籤 2: 基本面與無英文括號摘要
+            # 頁籤 2: 基本面與強制中文化摘要
             with tab2:
                 st.subheader(f"🏢 {company_name} 財務與基本面摘要")
                 
                 raw_sector = info.get('sector', None)
                 sector = sector_zh_map.get(raw_sector, raw_sector) if raw_sector else "無資料"
-                industry = info.get('industry', "無資料")
+                
+                raw_industry = info.get('industry', None)
+                industry = industry_zh_map.get(raw_industry, raw_industry) if raw_industry else "無資料"
+
                 country = "台灣" if info.get('country') == "Taiwan" else info.get('country', "無資料")
                 employees = info.get('fullTimeEmployees', None)
                 eps = info.get('trailingEps', None)
@@ -214,7 +238,7 @@ if stock_ticker:
                 st.markdown("### 📝 公司業務簡介")
                 summary_en = info.get('longBusinessSummary', None)
                 if summary_en:
-                    with st.spinner("正在將公司業務簡介翻譯為繁體中文..."):
+                    with st.spinner("Gemini 正在將公司業務簡介翻譯為繁體中文..."):
                         summary_zh = translate_summary_to_zh(summary_en)
                     st.info(summary_zh)
                 else:
