@@ -10,20 +10,12 @@ from urllib.parse import quote
 # ==========================================
 # 1. 頁面配置與側邊欄設定
 # ==========================================
-st.set_page_config(page_title="總經、個股深度分析與 AI 預測儀表板", layout="wide")
-st.title("📈 總體經濟、個股即時行情與 AI 智慧輿論解讀儀表板")
+st.set_page_config(page_title="個股深度分析與 AI 預測儀表板", layout="wide")
+st.title("📈 個股即時行情與 AI 智慧輿論解讀儀表板")
 
 st.sidebar.header("⚙️ 設定與金鑰")
 
-# 1.1 檢查 FRED API Key (總經數據用)
-fred_key = None
-if "FRED_API_KEY" in st.secrets:
-    fred_key = st.secrets["FRED_API_KEY"]
-    st.sidebar.success("已自動讀取 FRED API Key！")
-else:
-    fred_key = st.sidebar.text_input("請輸入 FRED API Key:", type="password")
-
-# 1.2 檢查 Gemini API Key
+# 1.1 檢查 Gemini API Key
 gemini_key = None
 if "GEMINI_API_KEY" in st.secrets:
     gemini_key = st.secrets["GEMINI_API_KEY"]
@@ -35,7 +27,7 @@ else:
         gemini_key = gemini_input
         genai.configure(api_key=gemini_key)
 
-# 1.3 智慧股票搜尋輸入框
+# 1.2 智慧股票搜尋輸入框
 st.sidebar.write("---")
 st.sidebar.header("🔍 標的選擇")
 user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 全景軟體, 8272, 台積電, 2330, AAPL):", value="全景軟體").strip()
@@ -59,51 +51,6 @@ stock_ticker = resolve_ticker(user_input)
 if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
 
-# ==========================================
-# 2. 數據抓取與智慧統整函式
-# ==========================================
-@st.cache_data(ttl=3600)
-def get_fred_data(api_key):
-    if not api_key:
-        return None
-    try:
-        fred = Fred(api_key=api_key)
-        data = {
-            "CPI 物價指數": fred.get_series("CPIAUCSL"),
-            "10年期美債殖利率": fred.get_series("DGS10"),
-            "美國失業率": fred.get_series("UNRATE"),
-            "聯邦基金利率": fred.get_series("FEDFUNDS")
-        }
-        df = pd.DataFrame(data).ffill().tail(365)
-        return df
-    except Exception:
-        return None
-
-@st.cache_data(ttl=600)
-def get_stock_data(ticker_symbol):
-    stock = yf.Ticker(ticker_symbol)
-    df = stock.history(period="1y")
-    info = stock.info
-    return df, info
-
-@st.cache_data(ttl=600)
-def get_market_index():
-    twii = yf.Ticker("^TWII")
-    df = twii.history(period="5d")
-    if not df.empty:
-        latest = df['Close'].iloc[-1]
-        prev = df['Close'].iloc[-2]
-        change = latest - prev
-        pct = (change / prev) * 100
-        return latest, change, pct
-    return 0.0, 0.0, 0.0
-
-@st.cache_data(ttl=1800)
-def fetch_google_news(keyword):
-    safe_keyword = quote(keyword)
-    url = f"https://news.google.com/rss/search?q={safe_keyword}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant"
-    feed = feedparser.parse(url)
-    return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
 # 加強快取機制：確保 AI 統整結果會被暫存，不會每次點擊都重新跑而導致跑很久
 @st.cache_data(ttl=86400)
