@@ -79,7 +79,6 @@ def fetch_google_news(keyword):
     feed = feedparser.parse(url)
     return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
-# 利用 Gemini 將英文業務簡介翻譯成繁體中文
 def translate_summary_to_zh(english_summary):
     if not gemini_key or not english_summary:
         return english_summary
@@ -91,7 +90,6 @@ def translate_summary_to_zh(english_summary):
     except Exception:
         return english_summary
 
-# 產業類別中文化對照表
 sector_zh_map = {
     "Technology": "資訊科技業",
     "Financial Services": "金融服務業",
@@ -175,3 +173,14 @@ if stock_ticker:
                 df['MA60'] = df['Close'].rolling(window=60).mean()
                 df['MA120'] = df['Close'].rolling(window=120).mean()
                 df['MA240'] = df['Close'].rolling(window=240).mean()
+
+                fig = go.Figure()
+                fig.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name="K線"))
+                fig.add_trace(go.Scatter(x=df.index, y=df['MA5'], line=dict(color='#ff7f0e', width=1), name="週線 (MA5)"))
+                fig.add_trace(go.Scatter(x=df.index, y=df['MA20'], line=dict(color='#2ca02c', width=1.2), name="月線 (MA20)"))
+                fig.add_trace(go.Scatter(x=df.index, y=df['MA60'], line=dict(color='#d62728', width=1.5), name="季線 (MA60)"))
+                fig.add_trace(go.Scatter(x=df.index, y=df['MA120'], line=dict(color='#9467bd', width=1.5), name="半年線 (MA120)"))
+                fig.add_trace(go.Scatter(x=df.index, y=df['MA240'], line=dict(color='#8c564b', width=2), name="年線 (MA240)"))
+                
+                fig.update_layout(title=f"{stock_ticker} 股價走勢與多週期均線圖", yaxis_title="價格 (Price)", xaxis_title="日期 (Date)", template="plotly_white", height=580)
+                st.plotly_chart(fig, use_container_width=True
