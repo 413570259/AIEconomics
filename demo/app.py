@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from fredapi import Fred
 import yfinance as yf
 import feedparser
 import google.generativeai as genai
@@ -9,12 +10,20 @@ from urllib.parse import quote
 # ==========================================
 # 1. 頁面配置與側邊欄設定
 # ==========================================
-st.set_page_config(page_title="個股深度分析與 AI 預測儀表板", layout="wide")
-st.title("📈 台美股即時行情、技術均線與 AI 智慧輿論解讀儀表板")
+st.set_page_config(page_title="總經、個股深度分析與 AI 預測儀表板", layout="wide")
+st.title("📈 總體經濟、個股即時行情與 AI 智慧輿論解讀儀表板")
 
 st.sidebar.header("⚙️ 設定與金鑰")
 
-# 1.1 檢查 Gemini API Key
+# 1.1 檢查 FRED API Key (總經數據用)
+fred_key = None
+if "FRED_API_KEY" in st.secrets:
+    fred_key = st.secrets["FRED_API_KEY"]
+    st.sidebar.success("已自動讀取 FRED API Key！")
+else:
+    fred_key = st.sidebar.text_input("請輸入 FRED API Key:", type="password")
+
+# 1.2 檢查 Gemini API Key
 gemini_key = None
 if "GEMINI_API_KEY" in st.secrets:
     gemini_key = st.secrets["GEMINI_API_KEY"]
@@ -26,7 +35,7 @@ else:
         gemini_key = gemini_input
         genai.configure(api_key=gemini_key)
 
-# 1.2 智慧股票搜尋輸入框
+# 1.3 智慧股票搜尋輸入框
 st.sidebar.write("---")
 st.sidebar.header("🔍 標的選擇")
 user_input = st.sidebar.text_input("輸入公司名稱或代號 (例: 全景軟體, 8272, 台積電, 2330, AAPL):", value="全景軟體").strip()
@@ -53,6 +62,23 @@ if st.sidebar.button("手動刷新數據"):
 # ==========================================
 # 2. 數據抓取與智慧統整函式
 # ==========================================
+@st.cache_data(ttl=3600)
+def get_fred_data(api_key):
+    if not api_key:
+        return None
+    try:
+        fred = Fred(api_key=api_key)
+        data = {
+            "CPI 物價指數": fred.get_series("CPIAUCSL"),
+            "10年期美債殖利率": fred.get_series("DGS10"),
+            "美國失業率": fred.get_series("UNRATE"),
+            "聯邦基金利率": fred.get_series("FEDFUNDS")
+        }
+        df = pd.DataFrame(data).ffill().tail(365)
+        return df
+    except Exception:
+        return None
+
 @st.cache_data(ttl=600)
 def get_stock_data(ticker_symbol):
     stock = yf.Ticker(ticker_symbol)
@@ -79,7 +105,7 @@ def fetch_google_news(keyword):
     feed = feedparser.parse(url)
     return [{"title": entry.title, "link": entry.link} for entry in feed.entries[:10]]
 
-# 利用 Gemini 將任意公司的介紹或財報資訊自動統整為「產業概況、產品組合、營運展望」
+# 加強快取機制：確保 AI 統整結果會被暫存，不會每次點擊都重新跑而導致跑很久
 @st.cache_data(ttl=86400)
 def generate_structured_summary(company_name, raw_summary):
     try:
@@ -135,7 +161,6 @@ name_zh_map = {
     "NVDA": "輝達公司 (NVIDIA Corporation)"
 }
 
-# 全景軟體（8272）專屬精準結構化內容
 pan_view_custom_summary = """
 **產業概況：**
 全景軟體成立於1998年，總部位於新竹科學園區，隸屬於緯創集團，為國內專業資訊安全軟體領導廠商。專注於「網路安全」與「人事物的識別認證」領域，深耕 PKI 與密碼學技術，所有解決方案均為自主研發。已取得 ISO 27001、FIDO、OATH 及資安院 ZTA 三階段驗證等專業認證，並於2024年10月23日轉上櫃掛牌（股票代號8272）。
@@ -160,6 +185,7 @@ if stock_ticker:
     try:
         df, info = get_stock_data(stock_ticker)
         twii_latest, twii_change, twii_pct = get_market_index()
+        macro_df = get_fred_data(fred_key) if fred_key else None
         
         if df.empty:
             st.error(f"找不到代號「{stock_ticker}」的資料，請確認輸入是否正確。")
@@ -179,8 +205,24 @@ if stock_ticker:
             high_52w = info.get("fiftyTwoWeekHigh", None)
             low_52w = info.get("fiftyTwoWeekLow", None)
 
-            # 第一區塊：頂部大盤與個股核心 KPI 卡片
-            st.subheader("📊 市場大盤與個股即時指標")
+            # 第一區塊：FRED 總體經濟指標 KPI（證明有用到 FRED API Key）
+            if macro_df is not None:
+                st.subheader("📊 美國核心總體經濟指標 (FRED)")
+                m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+                latest_cpi = macro_df["CPI 物價指數"].dropna().iloc[-1]
+                latest_rate = macro_df["10年期美債殖利率"].dropna().iloc[-1]
+                rate_prev = macro_df["10年期美債殖利率"].dropna().iloc[-2]
+                latest_unemp = macro_df["美國失業率"].dropna().iloc[-1]
+                latest_fed = macro_df["聯邦基金利率"].dropna().iloc[-1]
+
+                m_col1.metric("CPI 物價指數", f"{latest_cpi:.1f}")
+                m_col2.metric("10年美債殖利率", f"{latest_rate:.2f}%", f"{latest_rate - rate_prev:+.2f}%")
+                m_col3.metric("美國失業率", f"{latest_unemp:.1f}%")
+                m_col4.metric("聯邦基金利率", f"{latest_fed:.2f}%")
+                st.write("---")
+
+            # 第二區塊：頂部大盤與個股核心 KPI 卡片
+            st.subheader("📊 台灣大盤與個股即時指標")
             col_idx, col1, col2, col3, col4, col5 = st.columns(6)
             
             if twii_latest > 0:
@@ -199,7 +241,7 @@ if stock_ticker:
 
             st.write("---")
 
-            # 第二區塊：三大功能分頁
+            # 第三區塊：三大功能分頁
             tab1, tab2, tab3 = st.tabs([
                 "📉 個股技術分析", 
                 "📋 公司基本面與精簡統整摘要", 
@@ -306,7 +348,6 @@ if stock_ticker:
                                         4. **後續操作風險與觀察重點**：(提醒投資人應注意的總經或產業風險)
                                         """
                                         
-                                        # 已全面更新為 gemini-3.8-flash
                                         model = genai.GenerativeModel("gemini-3.8-flash")
                                         response = model.generate_content(prompt)
                                         st.markdown(response.text)
