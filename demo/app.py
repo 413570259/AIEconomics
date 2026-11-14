@@ -183,4 +183,91 @@ if stock_ticker:
                 fig.add_trace(go.Scatter(x=df.index, y=df['MA240'], line=dict(color='#8c564b', width=2), name="年線 (MA240)"))
                 
                 fig.update_layout(title=f"{stock_ticker} 股價走勢與多週期均線圖", yaxis_title="價格 (Price)", xaxis_title="日期 (Date)", template="plotly_white", height=580)
-                st.plotly_chart(fig, use_container_width=True
+                st.plotly_chart(fig, use_container_width=True)
+                
+            # 頁籤 2: 基本面與無英文括號摘要
+            with tab2:
+                st.subheader(f"🏢 {company_name} 財務與基本面摘要")
+                
+                raw_sector = info.get('sector', None)
+                sector = sector_zh_map.get(raw_sector, raw_sector) if raw_sector else "無資料"
+                industry = info.get('industry', "無資料")
+                country = "台灣" if info.get('country') == "Taiwan" else info.get('country', "無資料")
+                employees = info.get('fullTimeEmployees', None)
+                eps = info.get('trailingEps', None)
+                dividend_yield = info.get('dividendYield', None)
+                target_mean = info.get('targetMeanPrice', None)
+
+                col_info1, col_info2 = st.columns(2)
+                with col_info1:
+                    st.write(f"**產業類別:** {sector}")
+                    st.write(f"**次產業:** {industry}")
+                    st.write(f"**國家/地區:** {country}")
+                    st.write(f"**員工人數:** {f'{employees:,} 人' if employees else '無資料'}")
+                
+                with col_info2:
+                    st.write(f"**每股盈餘 (EPS):** {f'{eps:.2f}' if eps is not None else '無資料'}")
+                    st.write(f"**股利殖利率:** {f'{dividend_yield * 100:.2f}%' if dividend_yield else '無資料'}")
+                    st.write(f"**分析師目標均價:** {f'{target_mean:.2f}' if target_mean is not None else '無資料'}")
+
+                st.write("---")
+                st.markdown("### 📝 公司業務簡介")
+                summary_en = info.get('longBusinessSummary', None)
+                if summary_en:
+                    with st.spinner("正在將公司業務簡介翻譯為繁體中文..."):
+                        summary_zh = translate_summary_to_zh(summary_en)
+                    st.info(summary_zh)
+                else:
+                    st.warning("目前無詳細業務簡介資料（無資料）。")
+
+            # 頁籤 3: 新聞與 AI 預測
+            with tab3:
+                st.subheader(f"🎯 「{company_name}」即時新聞輿論與 AI 走勢評析")
+                
+                search_keyword = st.text_input("🔍 調整新聞搜尋關鍵字:", value="台積電" if "2330" in stock_ticker else company_name)
+                news_items = fetch_google_news(search_keyword)
+
+                col_news, col_ai = st.columns([1, 1])
+
+                with col_news:
+                    st.markdown(f"### 📌 最新相關新聞 (Google News)")
+                    if news_items:
+                        for i, item in enumerate(news_items, 1):
+                            st.markdown(f"**{i}.** [{item['title']}]({item['link']})")
+                    else:
+                        st.warning("查無相關新聞標題（無資料）。")
+
+                with col_ai:
+                    st.markdown(f"### 🤖 Gemini AI 智慧走勢預測與多空解析")
+                    if gemini_key:
+                        if st.button(f"🚀 開始分析未來走勢", type="primary"):
+                            if news_items:
+                                with st.spinner(f"Gemini 正在剖析最新新聞與市場情緒中..."):
+                                    try:
+                                        news_text = "\n".join([f"- {item['title']}" for item in news_items])
+                                        prompt = f"""
+                                        你是一位專業的股票證券分析師。使用者目前正在研究個股：「{stock_ticker} ({company_name})」。
+                                        以下是近期透過 Google 搜尋到的最新 10 條相關新聞標題：
+                                        {news_text}
+
+                                        請根據上述新聞內容與你的金融專業知識，以繁體中文輸出結構化報告，包含以下項目：
+                                        1. **綜合市場情緒評分**：(0 到 100 分，分數越高代表越偏多/樂觀)
+                                        2. **短期走勢方向預判**：(看漲 / 看跌 / 盤整中立，並說明核心邏輯)
+                                        3. **核心利多與利空因子**：(條列式分析新聞中所釋出的正面與負面訊號)
+                                        4. **後續操作風險與觀察重點**：(提醒投資人應注意的總經或產業風險)
+                                        """
+                                        
+                                        model = genai.GenerativeModel("gemini-2.0-flash")
+                                        response = model.generate_content(prompt)
+                                        st.markdown(response.text)
+                                    except Exception as e:
+                                        st.error(f"AI 分析時發生錯誤: {e}")
+                            else:
+                                st.warning("尚無新聞數據可供分析。")
+                    else:
+                        st.warning("👈 請在側邊欄輸入 Gemini API Key 以啟用 AI 預測功能。")
+
+    except Exception as e:
+        st.error(f"無法讀取該股票資料，請檢查代號或名稱是否正確。錯誤訊息: {e}")
+else:
+    st.info("👈 請在左側輸入欲查詢的股票代號或公司名稱。")
