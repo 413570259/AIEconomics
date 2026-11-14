@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import yfinance as yf
-import ta  # 用於計算技術指標 (RSI, MACD, MA)
+import ta  # 技術指標計算套件
 import feedparser
 import google.generativeai as genai
 from urllib.parse import quote
@@ -31,7 +31,7 @@ else:
 if st.sidebar.button("手動刷新數據"):
     st.cache_data.clear()
 
-# 使用者可在側邊欄自訂想分析的股票代號（例如台積電 2330.TW、美股 NVDA、AAPL）
+# 使用者可在側邊欄自訂想分析的股票代號
 default_ticker = st.sidebar.text_input("輸入要分析的股票代號 (Yahoo Finance 格式):", value="2330.TW")
 
 # ==========================================
@@ -42,12 +42,11 @@ def get_stock_data(ticker_symbol):
     stock = yf.Ticker(ticker_symbol)
     df = stock.history(period="1y")
     
-    # 使用 ta 套件計算技術指標
-    df["SMA_20"] = ta.trend.sma_indicator(df["Close"], window=20)
-    df["SMA_50"] = ta.trend.sma_indicator(df["Close"], window=50)
-    df["RSI"] = ta.momentum.rsi(df["Close"], window=14)
-    
-    # 取得個股基本資訊 (若有)
+    if not df.empty:
+        df["SMA_20"] = ta.trend.sma_indicator(df["Close"], window=20)
+        df["SMA_50"] = ta.trend.sma_indicator(df["Close"], window=50)
+        df["RSI"] = ta.momentum.rsi(df["Close"], window=14)
+        
     info = stock.info
     return df, info
 
@@ -81,7 +80,6 @@ try:
         latest_rsi = df["RSI"].iloc[-1]
         col2.metric("RSI (14日強弱指標)", f"{latest_rsi:.1f}")
         
-        # 從 yfinance info 抓取市值或本益比 (若無則顯示 N/A)
         market_cap = stock_info.get("marketCap", "N/A")
         if market_cap != "N/A":
             market_cap_str = f"{market_cap / 1e8:.1f} 億"
@@ -94,7 +92,7 @@ try:
 
         st.write("---")
 
-        # 第二區塊：分頁儀表板（技術面、基本面、AI輿情）
+        # 第二區塊：分頁儀表板
         tab1, tab2, tab3 = st.tabs([
             "📈 股價走勢與技術指標 (MACD/RSI/MA)", 
             "🏢 個股基本資訊與財報概況", 
@@ -104,13 +102,10 @@ try:
         # 頁籤 1: 技術分析圖表
         with tab1:
             st.subheader(f"{default_ticker} 近一年技術分析走勢圖")
-            
-            # 使用 Plotly 繪製多重指標圖
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=df.index, y=df["Close"], name="收盤價", line=dict(color="blue")))
             fig.add_trace(go.Scatter(x=df.index, y=df["SMA_20"], name="20日均線 (MA20)", line=dict(color="orange", dash="dash")))
             fig.add_trace(go.Scatter(x=df.index, y=df["SMA_50"], name="50日均線 (MA50)", line=dict(color="green", dash="dash")))
-            
             fig.update_layout(title=f"{default_ticker} 價格與移動平均線", xaxis_title="日期", yaxis_title="價格", height=500)
             st.plotly_chart(fig, use_container_width=True)
             
@@ -118,15 +113,14 @@ try:
         with tab2:
             st.subheader(f"{default_ticker} 公司基本面與市場指標")
             if stock_info:
-                # 將 yfinance 的重要基本面資訊整理成表格顯示
                 info_keys = {
                     "公司名稱 (Long Name)": stock_info.get("longName", "N/A"),
                     "產業別 (Sector)": stock_info.get("sector", "N/A"),
                     "國家/地區 (Country)": stock_info.get("country", "N/A"),
-                    "52週最高價 (52Week High)": stock_info.get("fiftyTwoWeekHigh", "N/A"),
-                    "52週最低價 (52Week Low)": stock_info.get("fiftyTwoWeekLow", "N/A"),
+                    "52週最高價": stock_info.get("fiftyTwoWeekHigh", "N/A"),
+                    "52週最低價": stock_info.get("fiftyTwoWeekLow", "N/A"),
                     "每股盈餘 (EPS)": stock_info.get("trailingEps", "N/A"),
-                    "預估殖利率 (Dividend Yield)": f"{stock_info.get('dividendYield', 0)*100:.2f}%" if stock_info.get('dividendYield') else "N/A"
+                    "預估殖利率": f"{stock_info.get('dividendYield', 0)*100:.2f}%" if stock_info.get('dividendYield') else "N/A"
                 }
                 info_df = pd.DataFrame(list(info_keys.items()), columns=["指標項目", "內容數據"])
                 st.table(info_df)
@@ -175,7 +169,7 @@ try:
                                     4. **投資風險與後續追蹤重點**
                                     """
                                     
-                                    model = genai.GenerativeModel("gemini-3.8-flash")
+                                    model = genai.GenerativeModel("gemini-2.0-flash")
                                     response = model.generate_content(prompt)
                                     st.markdown(response.text)
                                 except Exception as e:
@@ -187,7 +181,6 @@ try:
 
 except Exception as e:
     st.error(f"資料讀取或處理發生錯誤，請檢查股票代號是否正確。錯誤訊息: {e}")
-    except Exception as e:
         st.error(f"數據讀取失敗，請確認 FRED API Key 是否正確。錯誤訊息: {e}")
 else:
     st.info("👈 請在左側輸入您的 FRED API Key 以開啟儀表板。")
